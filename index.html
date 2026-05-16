@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Military Pension Studio v3.4.2 · A retirement instrument for service members</title>
+<title>Military Pension Studio v3.5 · A retirement instrument for service members</title>
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -191,7 +191,19 @@
   .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
   .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  /* min-width:0 lets grid children shrink below their content size, preventing horizontal overflow on narrow screens */
+  .grid-2 > *, .grid-3 > *, .grid-4 > *, .answer > *, .answer-row > *{min-width:0}
   @media(max-width:768px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+  @media(max-width:480px){
+    .answer-row{grid-template-columns:1fr !important}
+    .answer-cell{border-right:none !important;border-bottom:1px solid var(--line)}
+    .answer-cell:last-child{border-bottom:none}
+    .shoot-row{grid-template-columns:1fr;gap:8px;padding:10px}
+    .shoot-state{order:0}
+    .shoot-bar{order:2}
+    .shoot-val{order:1;text-align:left}
+    .hero-h{font-size:clamp(28px,9vw,42px)}
+  }
   .footer{border-top:1px solid var(--line);padding:40px 0;color:var(--ink-3);font-size:12px;line-height:1.6}
 
   /* ========================================================================
@@ -404,10 +416,20 @@ const { useState, useMemo, useEffect, useRef } = React;
    DATA TABLES (verified 2026)
    ========================================================================= */
 
-// 2026 VA disability monthly compensation - veteran alone (Source: VA.gov)
+// 2026 VA disability monthly compensation - effective Dec 1, 2025 (2.8% COLA).
+// Source: https://www.va.gov/disability/compensation-rates/veteran-rates/
+// VA publishes specific base rates for each dependent configuration. Linear
+// "veteran-alone + per-spouse + per-child" additions UNDERPAY families because
+// the first child added to a spouse increment is larger than each additional child.
 const VA_BASE_2026 = {0:0,10:180.42,20:356.66,30:552.47,40:795.84,50:1132.90,60:1435.02,70:1808.45,80:2102.15,90:2362.30,100:3938.58};
-const VA_SPOUSE_2026 = {30:65.79,40:87.38,50:108.97,60:131.58,70:153.00,80:175.00,90:196.99,100:219.61};
-const VA_CHILD_2026 = {30:32.08,40:42.77,50:54.49,60:64.16,70:75.91,80:86.60,90:97.30,100:108.04};
+
+// Dependent-configuration BASE rates (replace the veteran-alone base when applicable):
+const VA_SPOUSE_NO_CHILD_2026   = {30:617.47, 40:882.84, 50:1241.90, 60:1566.02, 70:1961.45, 80:2277.15, 90:2559.30, 100:4158.17};
+const VA_CHILD_NO_SPOUSE_2026   = {30:596.47, 40:853.84, 50:1205.90, 60:1523.02, 70:1910.45, 80:2219.15, 90:2494.30, 100:4085.43};
+const VA_SPOUSE_AND_CHILD_2026  = {30:666.47, 40:947.84, 50:1322.90, 60:1663.02, 70:2074.45, 80:2406.15, 90:2704.30, 100:4318.99};
+// Added per ADDITIONAL child beyond the first (the first child is already
+// baked into the dependent-configuration base rate above):
+const VA_ADDITIONAL_CHILD_2026  = {30:32,    40:43,     50:54,      60:65,      70:76,      80:87,      90:98,      100:109.11};
 
 // 2026 Federal Income Tax Brackets (Source: IRS Rev. Proc. 2025-32, Tax Foundation)
 const FED_BRACKETS_2026 = {
@@ -552,11 +574,22 @@ function pensionMultiplier(system,years){
 }
 
 function vaMonthly(rating,hasSpouse,kids){
-  const base=VA_BASE_2026[rating]||0;
-  if(rating<30)return base;
-  const spouse=hasSpouse?(VA_SPOUSE_2026[rating]||0):0;
-  const kidPay=kids*(VA_CHILD_2026[rating]||0);
-  return base+spouse+kidPay;
+  if(rating===0)return 0;
+  // 10% and 20% ratings receive flat base regardless of dependents.
+  if(rating<30)return VA_BASE_2026[rating]||0;
+  let base;
+  if(hasSpouse && kids>=1){
+    base=VA_SPOUSE_AND_CHILD_2026[rating]||0;
+  } else if(hasSpouse){
+    base=VA_SPOUSE_NO_CHILD_2026[rating]||0;
+  } else if(kids>=1){
+    base=VA_CHILD_NO_SPOUSE_2026[rating]||0;
+  } else {
+    base=VA_BASE_2026[rating]||0;
+  }
+  // Additional children beyond the first (the first is in the base above).
+  const additionalKids=Math.max(0,kids-1);
+  return base + additionalKids*(VA_ADDITIONAL_CHILD_2026[rating]||0);
 }
 
 // System-aware TIS accrual rate per additional year
@@ -670,10 +703,14 @@ function App(){
 
   // TSP - growth cap raised to 200%
   const [tspBalance,setTspBalance]=useState(220000); // today's balance
-  const [yearsToRetire,setYearsToRetire]=useState(2); // years between today and retirement
   const [tspMonthlyDuringService,setTspMonthlyDuringService]=useState(500); // monthly contribution while still serving
   const [tspMonthly,setTspMonthly]=useState(0); // monthly contribution AFTER retiring (most retirees stop)
   const [tspGrowth,setTspGrowth]=useState(7);
+
+  // Derived: current age and years until retirement (driven by birth year + retire age)
+  const currentYear=new Date().getFullYear();
+  const currentAge=useMemo(()=>Math.max(0,currentYear-birthYear),[currentYear,birthYear]);
+  const yearsToRetire=useMemo(()=>Math.max(0,retireAge-currentAge),[retireAge,currentAge]);
 
   // Civilian / transition
   const [civilianSalary,setCivilianSalary]=useState(120000);
@@ -776,15 +813,18 @@ function App(){
       const netPension=taxableRetiredPay-sbpPremium-monthlyFedTaxPension-monthlyStateTaxPension-tricareMonthly;
       const netTotal=netPension+va+crscRestore;
 
-      // Buying power = net income / cost-of-living index × 100
-      const buyingPower=netTotal*(100/loc.col);
-
       // Property tax (assume $400K home; disabled vet exemption applies only at 100% rating)
       let propTaxAnnual=0;
       if(!isExpat){
         const exemptHere=loc.vex==="100%"&&vaRating>=100;
         propTaxAnnual=exemptHere?0:400000*(loc.prop/100);
       }
+      const propTaxMonthly=propTaxAnnual/12;
+
+      // Buying power = (net income - housing tax burden) / cost-of-living index × 100
+      // Subtracting property tax makes the comparison apples-to-apples between locations
+      // with different tax burdens. Assumes home ownership; renters effectively pay it via rent.
+      const buyingPower=(netTotal-propTaxMonthly)*(100/loc.col);
 
       return{
         code,name:loc.n,isExpat,col:loc.col,
@@ -1195,9 +1235,11 @@ function App(){
                 <div className="field">
                   <div className="field-label">
                     <span>Years until you retire</span>
-                    <span className="field-value">{yearsToRetire}</span>
+                    <span className="field-value">{yearsToRetire} yrs</span>
                   </div>
-                  <input type="range" className="range-track" min={0} max={15} step={1} value={yearsToRetire} onChange={e=>setYearsToRetire(Number(e.target.value))}/>
+                  <div className="field-help" style={{marginTop:4}}>
+                    Auto-computed from your birth year ({birthYear}, current age {currentAge}) and retirement age ({retireAge}). Edit either in the inputs drawer.
+                  </div>
                 </div>
                 <div className="field">
                   <div className="field-label">
@@ -1554,7 +1596,7 @@ function App(){
         </section>
 
         <footer className="footer">
-          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.4.2 · A planning instrument for service members.</div>
+          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.5 · A planning instrument for service members.</div>
           Official retirement pay is determined by Defense Finance and Accounting Service (DFAS) based on your actual record. VA rates reflect 2026 (2.8% Cost of Living Adjustment, effective Dec 1 2025). Federal tax brackets per IRS Rev. Proc. 2025-32. State cost of living indices rebased from C2ER 2025. Expat cost of living from Numbeo 2026. Tax treaty status is general; consult a tax professional for your specific situation. Property tax effective rates from Tax Foundation 2025. CRDP/CRSC, REDUX age-62 catch-up, and BRS lump sum are simplified models. Built in conversation with Claude. Verify with your retirement services office and a tax professional before locking in a date.
         </footer>
       </div>
@@ -1675,7 +1717,7 @@ function PrintMemo(props){
           Military Pension Studio
         </div>
         <div className="pm-title">Retirement Decision Memo</div>
-        <div className="pm-meta">Generated {dateStr} · v3.4.2</div>
+        <div className="pm-meta">Generated {dateStr} · v3.5</div>
       </div>
 
       <div className="pm-identity">
@@ -1942,7 +1984,7 @@ function Topbar(){
           <span className="brand-name">Military Pension Studio</span>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.4.2</span>
+          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.5</span>
         </div>
       </div>
     </div>
@@ -2187,40 +2229,48 @@ function FullDecomp({calc}){
 }
 
 function RunwayChart({calc,terminalDays,skillBridgeMo,pensionLagDays,civilianSalary}){
-  const civilianMonthly=civilianSalary/12;
+  // Use NET values everywhere so the chart matches the rest of the app.
+  // Civilian salary is taxed at the user's effective fed + state rate.
+  // SkillBridge keeps you on active duty pay (base × (1-fed) + BAH + BAS, all of which
+  // the calc already computed as adMonthlyTakehome).
+  const civilianMonthlyNet=civilianSalary/12*(1-calc.effectiveFedRate-calc.homeCalc.stateTaxRate);
+  const skillBridgePay=calc.adMonthlyTakehome; // proxy for AD takehome during SkillBridge
   const pensionStart=Math.ceil(pensionLagDays/30);
   const months=Array.from({length:12},(_,i)=>{
     const m=i+1;
     return{
       m,
       pension:m>=pensionStart?calc.homeCalc.netTotal:0,
-      civilian:m>skillBridgeMo?civilianMonthly:0,
+      civilian:m>skillBridgeMo?civilianMonthlyNet:0,
       terminal:m===1?calc.terminalLeavePay:0,
-      skillbridge:m<=skillBridgeMo?calc.grossPension:0,
+      skillbridge:m<=skillBridgeMo?skillBridgePay:0,
     };
   });
   months.forEach(x=>x.total=x.pension+x.civilian+x.terminal+x.skillbridge);
   const max=Math.max(...months.map(m=>m.total),1);
+  // Guard against 0/0 = NaN when a month has zero total (zero civilian, no SkillBridge,
+  // no terminal leave, delayed first pension check).
+  const pct=(v,t)=>t>0?(v/t)*100:0;
   return(
     <div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(12,1fr)",gap:4,alignItems:"end",height:140}}>
         {months.map(m=>(
           <div key={m.m} style={{display:"flex",flexDirection:"column",justifyContent:"flex-end",height:"100%"}}>
             <div style={{display:"flex",flexDirection:"column-reverse",borderRadius:"4px 4px 0 0",overflow:"hidden",height:`${(m.total/max)*100}%`,minHeight:4}}>
-              <div style={{height:`${(m.skillbridge/m.total)*100}%`,background:"var(--accent)"}}/>
-              <div style={{height:`${(m.civilian/m.total)*100}%`,background:"var(--pos)"}}/>
-              <div style={{height:`${(m.pension/m.total)*100}%`,background:"#5a7a8a"}}/>
-              <div style={{height:`${(m.terminal/m.total)*100}%`,background:"#c0c0c0"}}/>
+              <div style={{height:`${pct(m.skillbridge,m.total)}%`,background:"var(--accent)"}}/>
+              <div style={{height:`${pct(m.civilian,m.total)}%`,background:"var(--pos)"}}/>
+              <div style={{height:`${pct(m.pension,m.total)}%`,background:"#5a7a8a"}}/>
+              <div style={{height:`${pct(m.terminal,m.total)}%`,background:"#c0c0c0"}}/>
             </div>
             <div style={{fontSize:9.5,color:"var(--ink-3)",marginTop:4,textAlign:"center"}}>{m.m}</div>
           </div>
         ))}
       </div>
       <div style={{display:"flex",flexWrap:"wrap",gap:12,marginTop:14,fontSize:11.5,color:"var(--ink-2)"}}>
-        <Leg color="var(--accent)" l="SkillBridge"/>
+        <Leg color="var(--accent)" l="SkillBridge (AD net)"/>
         <Leg color="#c0c0c0" l="Terminal leave"/>
-        <Leg color="#5a7a8a" l="Pension"/>
-        <Leg color="var(--pos)" l="Civilian"/>
+        <Leg color="#5a7a8a" l="Pension net"/>
+        <Leg color="var(--pos)" l="Civilian net"/>
       </div>
     </div>
   );
