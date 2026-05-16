@@ -2,7 +2,7 @@
 
 A retirement decision instrument for US service members. One self-contained HTML file. No accounts, no tracking, runs entirely in your browser.
 
-**Live:** https://YOUR-USERNAME.github.io/military-pension-studio/
+**Live:** https://stevennolanjr-dev.github.io/military-pension-studio/
 
 ## What it does
 
@@ -72,7 +72,7 @@ git init
 git add .
 git commit -m "Initial commit: Military Pension Studio v3.2"
 git branch -M main
-git remote add origin git@github.com:YOUR-USERNAME/military-pension-studio.git
+git remote add origin https://github.com/stevennolanjr-dev/military-pension-studio.git
 git push -u origin main
 
 # 3. On github.com → your repo → Settings → Pages
@@ -81,7 +81,7 @@ git push -u origin main
 #    Save
 ```
 
-Within a minute it will be live at `https://YOUR-USERNAME.github.io/military-pension-studio/`.
+Within a minute it will be live at `https://stevennolanjr-dev.github.io/military-pension-studio/`.
 
 **Other hosts that work with zero config:** Netlify (drag and drop), Cloudflare Pages, Vercel, any S3 + CloudFront setup, any static file server.
 
