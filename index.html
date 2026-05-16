@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Military Pension Studio v3.4.1 · A retirement instrument for service members</title>
+<title>Military Pension Studio v3.4.2 · A retirement instrument for service members</title>
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -502,6 +502,8 @@ const EXPATS = {
   GBR:{n:"UK / Scotland",col:99, visa:"6-month tourist", tax:"treaty",health:"good",     note:"No retirement visa; long-stay options limited. Scotland 20-30% cheaper than London.",type:"expat"},
   NLD:{n:"Netherlands",  col:107,visa:"DAFT (entrepreneur)",tax:"treaty",health:"excellent",note:"No formal retirement visa. DAFT requires business. Bike infrastructure unmatched.",type:"expat"},
   FRA:{n:"France",       col:98, visa:"Long-Stay Visitor",tax:"treaty",health:"excellent",note:"US gov pensions taxable only in US. Healthcare among best in world.",type:"expat"},
+  AUS:{n:"Australia",    col:99, visa:"Visitor / Parent Stream",tax:"treaty",health:"excellent",note:"Retirement visas largely closed to new applicants. Tax treaty protects US gov pensions. High cost.",type:"expat"},
+  PRI:{n:"Puerto Rico",  col:91, visa:"US territory · no visa",tax:"territory",health:"good",note:"No visa required for US citizens. US federal tax still applies to military pension. Puerto Rico has its own territorial tax for residents.",type:"expat"},
 };
 
 const COLA_RATIOS=[1,1,1,0.56,0.56,0.56,0.08,0.08,0.08,0,0,0];
@@ -1106,7 +1108,7 @@ function App(){
                       ?<div>Visa <b style={{fontSize:11}}>{s.loc.visa}</b></div>
                       :<div>Prop tax exempt <b>{s.loc.vex==="100%"?(vaRating>=100?"100% rated":"100% only"):s.loc.vex==="part"?"partial":"none"}</b></div>}
                     {s.isExpat
-                      ?<div>Treaty <b>{s.loc.tax==="treaty"?"protected":s.loc.tax==="limited"?"limited":s.loc.tax==="none"?"no treaty (PA exempts foreign)":""}</b></div>
+                      ?<div>Treaty <b>{s.loc.tax==="treaty"?"protected":s.loc.tax==="limited"?"limited":s.loc.tax==="territory"?"US territory":s.loc.tax==="none"?"no treaty":""}</b></div>
                       :<div>Prop tax <b className="num">{fmt(s.propTaxAnnual)}/yr</b></div>}
                     <div>{s.isExpat?"Healthcare":"Sales tax"} <b>{s.isExpat?s.loc.health:s.loc.salesTax.toFixed(1)+"%"}</b></div>
                   </div>
@@ -1552,7 +1554,7 @@ function App(){
         </section>
 
         <footer className="footer">
-          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.4.1 · A planning instrument for service members.</div>
+          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.4.2 · A planning instrument for service members.</div>
           Official retirement pay is determined by Defense Finance and Accounting Service (DFAS) based on your actual record. VA rates reflect 2026 (2.8% Cost of Living Adjustment, effective Dec 1 2025). Federal tax brackets per IRS Rev. Proc. 2025-32. State cost of living indices rebased from C2ER 2025. Expat cost of living from Numbeo 2026. Tax treaty status is general; consult a tax professional for your specific situation. Property tax effective rates from Tax Foundation 2025. CRDP/CRSC, REDUX age-62 catch-up, and BRS lump sum are simplified models. Built in conversation with Claude. Verify with your retirement services office and a tax professional before locking in a date.
         </footer>
       </div>
@@ -1673,7 +1675,7 @@ function PrintMemo(props){
           Military Pension Studio
         </div>
         <div className="pm-title">Retirement Decision Memo</div>
-        <div className="pm-meta">Generated {dateStr} · v3.4.1</div>
+        <div className="pm-meta">Generated {dateStr} · v3.4.2</div>
       </div>
 
       <div className="pm-identity">
@@ -1940,7 +1942,7 @@ function Topbar(){
           <span className="brand-name">Military Pension Studio</span>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.4.1</span>
+          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.4.2</span>
         </div>
       </div>
     </div>
@@ -2041,7 +2043,7 @@ function MultiLocationPicker({values,onChange,exclude=[]}){
     else if(values.length<7)onChange([...values,k]);
   };
   const POPULAR_STATES=["TX","FL","TN","NV","SD","WA","NC","SC","AZ","CO","NH","WY"];
-  const POPULAR_EXPATS=["PRT","MEX","PAN","PHL","THA","CRI","ESP","COL","ECU"];
+  const POPULAR_EXPATS=["PRT","MEX","PAN","PHL","THA","CRI","ESP","COL","ECU","PRI","AUS","GBR","FRA","ITA"];
   return(
     <div>
       <div style={{fontSize:11,color:"var(--ink-3)",marginBottom:6}}>Popular US states</div>
