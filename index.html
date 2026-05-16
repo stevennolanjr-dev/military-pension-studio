@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Military Pension Studio v3.3 · A retirement instrument for service members</title>
+<title>Military Pension Studio v3.4.1 · A retirement instrument for service members</title>
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -215,12 +215,14 @@
     #root > div > *{display:none !important}
     #root > div > .print-memo{display:grid !important}
     .print-memo{
-      grid-template-rows:auto auto auto 1fr auto;
-      gap:8px;
+      grid-template-rows:auto auto auto minmax(0,1.05fr) minmax(0,0.85fr) auto;
+      gap:6px;
       width:100%;
-      min-height:7.6in;
+      max-height:7.9in;
+      min-height:7.7in;
       color:#000;
       font-family:'Inter','Helvetica Neue',Arial,sans-serif;
+      overflow:hidden;
       page-break-inside:avoid;
       break-inside:avoid;
     }
@@ -261,17 +263,17 @@
 
     .pm-body{
       display:grid;
-      grid-template-columns:1fr 1.1fr 1fr;gap:10px;
+      grid-template-columns:1fr 1.05fr 1fr;gap:7px;
       align-items:stretch;
     }
     .pm-panel{
       border:1px solid #999;border-radius:4px;
-      padding:9px 11px;display:flex;flex-direction:column;
+      padding:7px 9px;display:flex;flex-direction:column;
     }
     .pm-panel-title{
       font-size:9px;text-transform:uppercase;letter-spacing:0.1em;
-      color:#000;font-weight:700;margin-bottom:7px;
-      border-bottom:1px solid #eee;padding-bottom:4px;
+      color:#000;font-weight:700;margin-bottom:5px;
+      border-bottom:1px solid #eee;padding-bottom:3px;
     }
     .pm-line{
       display:flex;justify-content:space-between;align-items:baseline;
@@ -326,22 +328,68 @@
       color:#666;font-weight:700;margin-bottom:4px;
     }
 
+    /* Second body row: TSP + Social Security */
+    .pm-body-row2{
+      display:grid;grid-template-columns:1fr 1fr;gap:7px;
+    }
+    .pm-milestone-row{
+      display:flex;align-items:stretch;gap:5px;margin-top:6px;
+    }
+    .pm-milestone{
+      flex:1;background:#f9f7f1;border:1px solid #d8d0bb;border-radius:3px;
+      padding:8px 9px;text-align:center;
+      display:flex;flex-direction:column;justify-content:center;
+    }
+    .pm-milestone-label{
+      font-size:9px;text-transform:uppercase;letter-spacing:0.06em;
+      color:#555;font-weight:700;margin-bottom:4px;
+    }
+    .pm-milestone-label.accent{color:#8B6914}
+    .pm-milestone-val{
+      font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;
+      letter-spacing:-0.02em;color:#000;line-height:1;
+    }
+    .pm-milestone-val.accent{color:#8B6914}
+    .pm-milestone-sub{font-size:9px;color:#555;margin-top:4px;line-height:1.25;font-weight:500}
+    .pm-milestone-arrow{color:#bbb;font-size:16px;font-weight:300;flex:none;align-self:center}
+
+    .pm-bars.ss{grid-template-columns:repeat(9,1fr);height:70px;margin:6px 0 2px}
+    .pm-bars.ss .pm-bar-label{font-size:8.5px;margin-top:3px}
+
+    /* Compact locations for fitting up to 8 */
+    .pm-loc.compact{margin-bottom:3px}
+    .pm-loc.compact .pm-loc-head{font-size:9.5px;margin-bottom:1px}
+    .pm-loc.compact .pm-loc-bar{height:4px;margin-bottom:1px}
+    .pm-loc.compact .pm-loc-detail{font-size:7.5px;line-height:1.2}
+    .pm-loc.compact .pm-loc-val{font-size:10px}
+    .pm-loc.compact .pm-loc-tag{font-size:6.5px;padding:0 3px}
+
+    /* Footer restructured: 3 columns (verify, decisions, sources) */
     .pm-footer{
-      display:grid;grid-template-columns:1.4fr 1fr;gap:14px;
-      padding-top:6px;border-top:1px solid #ccc;
-      font-size:8px;color:#555;line-height:1.4;
+      display:grid;grid-template-columns:1.2fr 1.3fr 1fr;gap:14px;
+      padding-top:5px;border-top:1px solid #ccc;
+      font-size:8.5px;color:#444;line-height:1.4;
     }
     .pm-footer b{color:#000;font-weight:700}
+    .pm-footer-title{
+      font-weight:700;color:#000;margin-bottom:4px;font-size:9.5px;
+      text-transform:uppercase;letter-spacing:0.05em;
+    }
+    .pm-footer-list{
+      display:flex;flex-direction:column;gap:3px;
+      font-size:9px;color:#222;line-height:1.4;
+    }
+    .pm-footer-sources{font-size:8px;color:#666;line-height:1.5}
     .pm-checklist{
       list-style:none;padding:0;margin:0;
-      display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;
+      display:grid;grid-template-columns:1fr;gap:2px;
     }
     .pm-checklist li{
       display:flex;align-items:flex-start;gap:5px;line-height:1.3;font-size:8.5px;color:#000;
     }
     .pm-checklist li::before{
-      content:"";display:inline-block;width:8px;height:8px;border:1px solid #000;
-      flex:none;margin-top:1px;border-radius:1px;
+      content:"";display:inline-block;width:7px;height:7px;border:1px solid #000;
+      flex:none;margin-top:2px;border-radius:1px;
     }
   }
 </style>
@@ -619,8 +667,10 @@ function App(){
   const [sbpBasePct,setSbpBasePct]=useState(100);
 
   // TSP - growth cap raised to 200%
-  const [tspBalance,setTspBalance]=useState(220000);
-  const [tspMonthly,setTspMonthly]=useState(0);
+  const [tspBalance,setTspBalance]=useState(220000); // today's balance
+  const [yearsToRetire,setYearsToRetire]=useState(2); // years between today and retirement
+  const [tspMonthlyDuringService,setTspMonthlyDuringService]=useState(500); // monthly contribution while still serving
+  const [tspMonthly,setTspMonthly]=useState(0); // monthly contribution AFTER retiring (most retirees stop)
   const [tspGrowth,setTspGrowth]=useState(7);
 
   // Civilian / transition
@@ -761,11 +811,22 @@ function App(){
     const lifetimeVA=va*12*yearsRetired;
     const lifetimeTotal=lifetimePension+lifetimeVA;
 
-    // TSP projection
-    const yrsToFRA=Math.max(0,67-retireAge);
-    const mFRA=yrsToFRA*12;
+    // TSP projection with milestones
+    // Phase 1: today → retirement (still serving, contributing during-service)
+    // Phase 2: retirement → age 59.5 (earliest penalty-free, contributing post-retirement)
+    // Phase 3: retirement → age 67 (Full Retirement Age, continued post-retirement contribs)
     const mr=(tspGrowth/100)/12;
-    const tspFV=mr>0?tspBalance*Math.pow(1+mr,mFRA)+tspMonthly*((Math.pow(1+mr,mFRA)-1)/mr):tspBalance+tspMonthly*mFRA;
+    const fvAnnuity=(months,monthly)=>mr>0?monthly*((Math.pow(1+mr,months)-1)/mr):monthly*months;
+    const fvLumpSum=(months,principal)=>mr>0?principal*Math.pow(1+mr,months):principal;
+    const mPhase1=yearsToRetire*12;
+    const tspAtRetirement=fvLumpSum(mPhase1,tspBalance)+fvAnnuity(mPhase1,tspMonthlyDuringService);
+    const yrsRetireTo59_5=Math.max(0,59.5-retireAge);
+    const mPhase2=yrsRetireTo59_5*12;
+    const tspAt59_5=fvLumpSum(mPhase2,tspAtRetirement)+fvAnnuity(mPhase2,tspMonthly);
+    const yrsRetireTo67=Math.max(0,67-retireAge);
+    const mPhase3=yrsRetireTo67*12;
+    const tspAt67=fvLumpSum(mPhase3,tspAtRetirement)+fvAnnuity(mPhase3,tspMonthly);
+    const tspFV=tspAt67; // backwards-compat alias
 
     const civilianMonthly=civilianSalary/12;
     // Civilian salary is taxable. Net it by fed + (home state) effective rates.
@@ -800,13 +861,13 @@ function App(){
       homeCalc,compareCalcs,bestLocation,
       trapRows,selectedRow,bestRow,worstRow,trapDelta,trapLifetime,
       lifetimePension,lifetimeVA,lifetimeTotal,lifetimeTotalWithSS,
-      tspFV,civilianMonthly,terminalLeavePay,householdRunway,
+      tspFV,tspAtRetirement,tspAt59_5,tspAt67,civilianMonthly,terminalLeavePay,householdRunway,
       ssMonthly,ssYearsCollected,ssLifetime,yearsUntilSS,
       basMonthly,adMonthlyTakehome,adBaseTakehome,monthlyGapVsAD,targetCivilianAnnual,civilianGapStatus,
     };
   },[system,years,highThree,retireMonth,retireAge,annualCOLA,filingStatus,gender,birthYear,rank,
      brsLump,discountRate,vaRating,hasSpouse,kids,combatRelated,
-     sbpOn,sbpBasePct,homeLocation,compareLocations,tspBalance,tspMonthly,tspGrowth,
+     sbpOn,sbpBasePct,homeLocation,compareLocations,tspBalance,tspMonthly,tspGrowth,yearsToRetire,tspMonthlyDuringService,
      civilianSalary,terminalDays,skillBridgeMo,pensionLagDays,lostBAH,tricarePlan,fedTaxOverride,
      ssBenefitFRA,ssClaimAge]);
 
@@ -1016,7 +1077,7 @@ function App(){
           <div className="surface" style={{marginBottom:18}}>
             <div style={{fontSize:12,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10,fontWeight:500}}>Home location</div>
             <LocationSelect value={homeLocation} onChange={setHomeLocation} exclude={compareLocations}/>
-            <div style={{fontSize:12,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",margin:"18px 0 10px",fontWeight:500}}>Compare against (pick up to 3)</div>
+            <div style={{fontSize:12,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",margin:"18px 0 10px",fontWeight:500}}>Compare against (pick up to 7)</div>
             <MultiLocationPicker values={compareLocations} onChange={setCompareLocations} exclude={[homeLocation]}/>
           </div>
 
@@ -1119,14 +1180,30 @@ function App(){
             <div className="surface">
               <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8,fontWeight:500}}>Thrift Savings Plan (TSP)</div>
               <div className="display" style={{fontSize:20,marginBottom:12}}>
-                {fmt(tspBalance)} today → <span className="num text-accent">{fmt(calc.tspFV)}</span> at age 67 <Conf level="low"/>
+                {fmt(tspBalance)} today → <span className="num text-accent">{fmt(calc.tspAtRetirement)}</span> at retirement <Conf level="low"/>
               </div>
               <div className="field">
                 <div className="field-label">
-                  <span>Current balance</span>
-                  <span className="field-value">{fmt(tspBalance)}</span>
+                  <span>Balance today</span>
+                  <span className="field-value num">{fmt(tspBalance)}</span>
                 </div>
                 <input type="range" className="range-track" min={0} max={2000000} step={10000} value={tspBalance} onChange={e=>setTspBalance(Number(e.target.value))}/>
+              </div>
+              <div className="grid-2" style={{gap:14}}>
+                <div className="field">
+                  <div className="field-label">
+                    <span>Years until you retire</span>
+                    <span className="field-value">{yearsToRetire}</span>
+                  </div>
+                  <input type="range" className="range-track" min={0} max={15} step={1} value={yearsToRetire} onChange={e=>setYearsToRetire(Number(e.target.value))}/>
+                </div>
+                <div className="field">
+                  <div className="field-label">
+                    <span>Monthly TSP while serving</span>
+                    <span className="field-value num">{fmt(tspMonthlyDuringService)}</span>
+                  </div>
+                  <input type="range" className="range-track" min={0} max={2500} step={50} value={tspMonthlyDuringService} onChange={e=>setTspMonthlyDuringService(Number(e.target.value))}/>
+                </div>
               </div>
               <div className="field">
                 <div className="field-label">
@@ -1136,9 +1213,24 @@ function App(){
                 <input type="range" className="range-track" min={0} max={200} step={0.5} value={tspGrowth} onChange={e=>setTspGrowth(Number(e.target.value))}/>
                 <div className="field-help">Cap raised to 200% to accommodate active strategy modeling. Long-run S&amp;P real return ~7%.</div>
               </div>
-              <div className="surface-inset" style={{marginTop:14}}>
-                <div style={{fontSize:12,color:"var(--ink-3)"}}>4% safe withdrawal at age 67</div>
-                <div style={{fontSize:18,marginTop:4}} className="num">{fmt(calc.tspFV*0.04/12)}/mo additional income</div>
+
+              {/* Three milestones */}
+              <div className="grid-3" style={{gap:8,marginTop:12}}>
+                <div className="surface-inset">
+                  <div style={{fontSize:10.5,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>At retirement</div>
+                  <div className="num text-accent" style={{fontSize:18,fontWeight:500,marginTop:4}}>{fmt(calc.tspAtRetirement)}</div>
+                  <div style={{fontSize:11,color:"var(--ink-3)",marginTop:2}}>4%: {fmt(calc.tspAtRetirement*0.04/12)}/mo</div>
+                </div>
+                <div className="surface-inset">
+                  <div style={{fontSize:10.5,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>At age 59.5</div>
+                  <div className="num text-accent" style={{fontSize:18,fontWeight:500,marginTop:4}}>{fmt(calc.tspAt59_5)}</div>
+                  <div style={{fontSize:11,color:"var(--ink-3)",marginTop:2}}>penalty-free access</div>
+                </div>
+                <div className="surface-inset">
+                  <div style={{fontSize:10.5,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>At age 67</div>
+                  <div className="num text-accent" style={{fontSize:18,fontWeight:500,marginTop:4}}>{fmt(calc.tspAt67)}</div>
+                  <div style={{fontSize:11,color:"var(--ink-3)",marginTop:2}}>4%: {fmt(calc.tspAt67*0.04/12)}/mo</div>
+                </div>
               </div>
             </div>
           </div>
@@ -1150,11 +1242,13 @@ function App(){
             <p><strong>Common mistake:</strong> electing partial coverage to save on premiums. The math rarely favors it. If you elect, go full base. You can decrease coverage later (one-time, between months 25-36 of retirement), but you cannot increase it. Decision is otherwise locked at retirement.</p>
           </LearnBlock>
 
-          <LearnBlock title="Thrift Savings Plan: what changes at retirement">
-            <p>The Thrift Savings Plan (TSP) is the federal government's 401(k)-equivalent retirement account. Low fees, five core funds (G, F, C, S, I) plus Lifecycle (L) target-date funds.</p>
-            <p>At retirement: leave it (it keeps growing), withdraw monthly, take partial withdrawal, or transfer to an Individual Retirement Account (IRA). No Required Minimum Distribution (RMD) until age 73.</p>
-            <p>The "4% rule" is a rough safe-withdrawal heuristic: withdrawing 4% of your balance annually has historically lasted 30 years with high probability. For a $500K balance, that is $20K/year or $1,667/month.</p>
-            <p>For BRS members: the 5% match continues until separation. Maximize it. After separation, the match stops, but you can still contribute up to the annual limit ($23,500 in 2026 for under-50, plus $7,500 catch-up if 50+).</p>
+          <LearnBlock title="TSP: when can you actually access the money?">
+            <p>The Thrift Savings Plan (TSP) is the federal 401(k)-equivalent retirement account. Low fees, five core funds (G, F, C, S, I) plus Lifecycle (L) target-date funds. 2026 contribution limit: $23,500 ($31,000 if 50+).</p>
+            <p><strong>The standard rule:</strong> withdrawals before age 59½ trigger a 10% early withdrawal penalty on top of ordinary income tax. The IRS treats your traditional TSP money as tax-deferred until you're 59½ in standard cases.</p>
+            <p><strong>Military exception — Rule of 55:</strong> If you separate from federal service (including military retirement) <em>during or after</em> the calendar year you turn 55, you can take penalty-free withdrawals from your TSP at any age after that separation. This is huge for late-career retirees. Most active-duty retirees retire before 55, so they don't qualify under this rule.</p>
+            <p><strong>If you retire before 55:</strong> options to avoid the 10% penalty include Substantially Equal Periodic Payments (SEPP / 72(t)), TSP annuity election, qualified disability, or specific public safety provisions. Roth TSP contributions (not earnings) can be withdrawn anytime tax-free.</p>
+            <p><strong>The "4% rule"</strong> is a rough safe-withdrawal heuristic: withdrawing 4% of your balance annually has historically lasted 30 years with high probability. For a $500K balance, that is $20K/year or $1,667/month.</p>
+            <p><strong>For BRS members:</strong> the 5% match continues until separation. Maximize it. After separation, the match stops, but you can still contribute up to the annual limit if you have other earned income.</p>
           </LearnBlock>
 
           {/* ===== Social Security ===== */}
@@ -1191,7 +1285,7 @@ function App(){
                   <span className="field-value">Age {ssClaimAge}</span>
                 </div>
                 <input type="range" className="range-track" min={62} max={70} step={1} value={ssClaimAge} onChange={e=>setSsClaimAge(Number(e.target.value))}/>
-                <div className="field-help">62 = -30%. 67 = 100% (FRA). 70 = +24%. Each year matters.</div>
+                <div className="field-help">62 = -30%. 67 = 100% (full retirement age). 70 = +24%. Each year matters.</div>
               </div>
             </div>
 
@@ -1458,7 +1552,7 @@ function App(){
         </section>
 
         <footer className="footer">
-          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.3 · A planning instrument for service members.</div>
+          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.4.1 · A planning instrument for service members.</div>
           Official retirement pay is determined by Defense Finance and Accounting Service (DFAS) based on your actual record. VA rates reflect 2026 (2.8% Cost of Living Adjustment, effective Dec 1 2025). Federal tax brackets per IRS Rev. Proc. 2025-32. State cost of living indices rebased from C2ER 2025. Expat cost of living from Numbeo 2026. Tax treaty status is general; consult a tax professional for your specific situation. Property tax effective rates from Tax Foundation 2025. CRDP/CRSC, REDUX age-62 catch-up, and BRS lump sum are simplified models. Built in conversation with Claude. Verify with your retirement services office and a tax professional before locking in a date.
         </footer>
       </div>
@@ -1548,6 +1642,10 @@ function App(){
         sbpBasePct={sbpBasePct}
         civilianSalary={civilianSalary}
         annualCOLA={annualCOLA}
+        tspBalance={tspBalance}
+        tspGrowth={tspGrowth}
+        yearsToRetire={yearsToRetire}
+        tspMonthlyDuringService={tspMonthlyDuringService}
       />
     </div>
   );
@@ -1558,7 +1656,8 @@ function App(){
    ========================================================================= */
 function PrintMemo(props){
   const {calc,rank,system,years,retireMonth,retireAge,vaRating,hasSpouse,kids,
-         filingStatus,homeLocation,ssClaimAge,sbpOn,sbpBasePct}=props;
+         filingStatus,homeLocation,ssClaimAge,ssBenefitFRA,sbpOn,sbpBasePct,
+         tspBalance,tspGrowth,yearsToRetire,tspMonthlyDuringService}=props;
   const today=new Date();
   const dateStr=today.toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
   const systemLabel={high3:"High-3",brs:"BRS",redux:"REDUX",finalpay:"Final Pay"}[system];
@@ -1574,7 +1673,7 @@ function PrintMemo(props){
           Military Pension Studio
         </div>
         <div className="pm-title">Retirement Decision Memo</div>
-        <div className="pm-meta">Generated {dateStr} · v3.3</div>
+        <div className="pm-meta">Generated {dateStr} · v3.4.1</div>
       </div>
 
       <div className="pm-identity">
@@ -1598,7 +1697,7 @@ function PrintMemo(props){
         <div className="pm-hero-cell">
           <div className="pm-hero-label">Pension net</div>
           <div className="pm-hero-value">{fmt(calc.homeCalc.netPension)}</div>
-          <div className="pm-hero-sub">{calc.eligibleCRDP?"CRDP active · no waiver":"VA waiver applied"}</div>
+          <div className="pm-hero-sub">{calc.eligibleCRDP?"Concurrent receipt (CRDP) · no VA waiver":"VA waiver applied"}</div>
         </div>
         <div className="pm-hero-cell">
           <div className="pm-hero-label">VA tax-free</div>
@@ -1696,12 +1795,12 @@ function PrintMemo(props){
             <div style={{fontSize:8.5,color:"#444",lineHeight:1.5}}>
               {rank.startsWith("O")&&<>• <b>Time in grade:</b> Officers O-4+ need 3 yrs at current grade. Check 10 USC 1370.<br/></>}
               <>• <b>Jan 1 raise:</b> Retire Feb+ to lock the new pay rate into high-3.<br/></>
-              <>• <b>BDD claim:</b> File VA claim 180-90 days pre-retirement.</>
+              <>• <b>VA claim (BDD program):</b> File 180-90 days pre-retirement.</>
             </div>
           </div>
         </div>
 
-        {/* Column 3: Location + Wealth */}
+        {/* Column 3: Locations (compact, fits up to 8) */}
         <div className="pm-panel">
           <div className="pm-panel-title">Where to live · monthly buying power</div>
           {[...calc.compareCalcs].sort((a,b)=>b.buyingPower-a.buyingPower).map(s=>{
@@ -1709,7 +1808,7 @@ function PrintMemo(props){
             const leader=s.code===calc.bestLocation.code;
             const isHome=s.code===homeLocation;
             return(
-              <div key={s.code} className={`pm-loc ${leader?"leader":""}`}>
+              <div key={s.code} className={`pm-loc compact ${leader?"leader":""}`}>
                 <div className="pm-loc-head">
                   <div className="pm-loc-name">
                     {s.name}
@@ -1722,48 +1821,110 @@ function PrintMemo(props){
                 <div className="pm-loc-bar">
                   <div className="pm-loc-bar-fill" style={{width:`${(s.buyingPower/max)*100}%`}}/>
                 </div>
-                <div className="pm-loc-detail">COL {s.col} · {s.isExpat?"no US state tax":`tax ${s.stateTaxNote}`}{!s.isExpat&&s.propTaxAnnual>0?` · prop ${fmt(s.propTaxAnnual)}/yr`:""}</div>
+                <div className="pm-loc-detail">Cost-of-living {s.col} · {s.isExpat?"no US state tax":`pension tax ${s.stateTaxNote}`}{!s.isExpat&&s.propTaxAnnual>0?` · property tax ${fmt(s.propTaxAnnual)}/yr`:""}</div>
               </div>
             );
           })}
-          <div className="pm-sub">
-            <div className="pm-sub-title">Wealth + key decisions</div>
-            <div className="pm-line">
-              <span className="pm-line-label">TSP at age 67</span>
-              <span className="pm-line-val">{fmt(calc.tspFV)}</span>
+        </div>
+      </div>
+
+      {/* Row 2: TSP milestones + Social Security chart */}
+      <div className="pm-body-row2">
+        <div className="pm-panel">
+          <div className="pm-panel-title">
+            TSP milestones
+            <span style={{float:"right",fontSize:8,color:"#666",fontWeight:500,letterSpacing:0,textTransform:"none"}}>
+              {fmt(tspBalance)} today · {yearsToRetire} yr to retire · {tspGrowth.toFixed(1)}% growth · ${tspMonthlyDuringService}/mo contrib
+            </span>
+          </div>
+          <div className="pm-milestone-row">
+            <div className="pm-milestone">
+              <div className="pm-milestone-label">At retirement</div>
+              <div className="pm-milestone-val">{fmt(calc.tspAtRetirement)}</div>
+              <div className="pm-milestone-sub">in {yearsToRetire} yrs · age {retireAge}</div>
             </div>
-            <div className="pm-line">
-              <span className="pm-line-label">Social Security <span className="pm-line-note">age {ssClaimAge}</span></span>
-              <span className="pm-line-val">{fmt(calc.ssMonthly)}/mo</span>
+            <div className="pm-milestone-arrow">→</div>
+            <div className="pm-milestone">
+              <div className="pm-milestone-label">At age 59.5</div>
+              <div className="pm-milestone-val">{fmt(calc.tspAt59_5)}</div>
+              <div className="pm-milestone-sub">penalty-free access</div>
             </div>
-            <div className="pm-line">
-              <span className="pm-line-label">SBP coverage</span>
-              <span className="pm-line-val">{sbpOn?fmt(calc.sbpBase*0.55)+"/mo":"none"}</span>
+            <div className="pm-milestone-arrow">→</div>
+            <div className="pm-milestone">
+              <div className="pm-milestone-label accent">At age 67 · Full retirement</div>
+              <div className="pm-milestone-val accent">{fmt(calc.tspAt67)}</div>
+              <div className="pm-milestone-sub">{fmt(calc.tspAt67*0.04/12)}/mo at 4% rule</div>
             </div>
-            <div className="pm-line">
-              <span className="pm-line-label">Target civilian salary</span>
-              <span className="pm-line-val">{fmt(calc.targetCivilianAnnual)}/yr</span>
+          </div>
+          <div className="pm-callout" style={{marginTop:6,fontSize:8.5}}>
+            <b>Early access:</b> Pre-59½ withdrawals normally cost a 10% penalty plus tax. Exceptions: Rule of 55 (separate at/after age 55), 72(t) substantially equal periodic payments, or TSP annuity. Roth contributions are always penalty-free.
+          </div>
+        </div>
+
+        <div className="pm-panel">
+          <div className="pm-panel-title">
+            Social Security · claim age decision
+            <span style={{float:"right",fontSize:8,color:"#666",fontWeight:500,letterSpacing:0,textTransform:"none"}}>
+              {fmt(ssBenefitFRA)}/mo at age 67 (full retirement age)
+            </span>
+          </div>
+          <div className="pm-bars ss">
+            {[62,63,64,65,66,67,68,69,70].map(age=>{
+              const m=ssBenefitFRA*SS_FACTORS[age];
+              const max=ssBenefitFRA*SS_FACTORS[70];
+              const h=(m/max)*100;
+              const sel=age===ssClaimAge;
+              const fra=age===67;
+              return(
+                <div key={age} className={`pm-bar ${sel?"selected":""} ${fra&&!sel?"best":""}`}>
+                  <div className="pm-bar-rect" style={{height:`${h}%`}}/>
+                  <div className="pm-bar-label">{age}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="pm-milestone-row" style={{marginTop:4,gap:6}}>
+            <div className="pm-milestone" style={{flex:1}}>
+              <div className="pm-milestone-label">Selected · age {ssClaimAge}</div>
+              <div className="pm-milestone-val accent">{fmt(calc.ssMonthly)}/mo</div>
+              <div className="pm-milestone-sub">{(SS_FACTORS[ssClaimAge]*100).toFixed(0)}% of age-67 benefit · {fmt(calc.ssLifetime)} lifetime</div>
             </div>
+            <div className="pm-milestone" style={{flex:1}}>
+              <div className="pm-milestone-label">Breakeven</div>
+              <div className="pm-milestone-val">age 80-82</div>
+              <div className="pm-milestone-sub">past 82, delay wins</div>
+            </div>
+          </div>
+          <div className="pm-callout" style={{marginTop:6,fontSize:8.5}}>
+            <b>Rule of thumb:</b> Claim early (62) if shortened life expectancy or need cash. Claim late (70) if other income bridges the gap and family longevity is good. Military pension does NOT reduce SS.
           </div>
         </div>
       </div>
 
       <div className="pm-footer">
         <div>
-          <div style={{fontWeight:700,color:"#000",marginBottom:4,fontSize:9}}>Verify before locking in</div>
+          <div className="pm-footer-title">Verify before locking in</div>
           <ul className="pm-checklist">
             <li>VA disability rating final on DD-214</li>
             <li>Civilian salary offer in hand</li>
             <li>State of residence at retirement</li>
-            <li>SBP base amount elected</li>
+            <li>Survivor Benefit Plan base amount elected</li>
             <li>Social Security claim age confirmed</li>
-            <li>Tax pro reviewed effective rate</li>
+            <li>Tax professional reviewed effective rate</li>
           </ul>
         </div>
-        <div style={{fontSize:7.5,color:"#666",lineHeight:1.5}}>
-          Planning estimate only. Official figures from <b>DFAS</b>. VA rates per <b>VA.gov 2026 tables</b>. Federal brackets per <b>IRS Rev. Proc. 2025-32</b>. Cost-of-living from <b>C2ER 2025</b> (states) and <b>Numbeo 2026</b> (international). Not financial, tax, or legal advice.
-          <br/><br/>
-          <b>Refresh anytime at:</b> stevennolanjr-dev.github.io/military-pension-studio
+        <div>
+          <div className="pm-footer-title">Key decisions snapshot</div>
+          <div className="pm-footer-list">
+            <div><b>SBP coverage:</b> {sbpOn?fmt(calc.sbpBase*0.55)+"/mo to survivor (premium "+fmt(calc.sbpPremium)+"/mo)":"NONE elected"}</div>
+            <div><b>Target civilian salary:</b> {fmt(calc.targetCivilianAnnual)}/yr to match AD takehome of {fmt(calc.adMonthlyTakehome)}/mo</div>
+            <div><b>BAH at retirement:</b> {fmt(calc.adMonthlyTakehome-calc.adBaseTakehome)}/mo lost</div>
+          </div>
+        </div>
+        <div className="pm-footer-sources">
+          Planning estimate. Sources: <b>DFAS</b> · <b>VA.gov 2026</b> · <b>IRS Rev. Proc. 2025-32</b> · <b>C2ER 2025</b> · <b>Numbeo 2026</b>. Not financial, tax, or legal advice.
+          <br/>
+          <b>Refresh at:</b> stevennolanjr-dev.github.io/military-pension-studio
         </div>
       </div>
     </div>
@@ -1779,7 +1940,7 @@ function Topbar(){
           <span className="brand-name">Military Pension Studio</span>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.3</span>
+          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.4.1</span>
         </div>
       </div>
     </div>
@@ -1877,7 +2038,7 @@ function LocationSelect({value,onChange,exclude=[]}){
 function MultiLocationPicker({values,onChange,exclude=[]}){
   const toggle=k=>{
     if(values.includes(k))onChange(values.filter(v=>v!==k));
-    else if(values.length<3)onChange([...values,k]);
+    else if(values.length<7)onChange([...values,k]);
   };
   const POPULAR_STATES=["TX","FL","TN","NV","SD","WA","NC","SC","AZ","CO","NH","WY"];
   const POPULAR_EXPATS=["PRT","MEX","PAN","PHL","THA","CRI","ESP","COL","ECU"];
@@ -1914,7 +2075,7 @@ function MultiLocationPicker({values,onChange,exclude=[]}){
             ))}
           </optgroup>
         </select>
-        <span style={{fontSize:11.5,color:"var(--ink-3)"}}>{values.length}/3</span>
+        <span style={{fontSize:11.5,color:"var(--ink-3)"}}>{values.length}/7</span>
       </div>
     </div>
   );
