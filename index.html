@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Military Pension Studio v3.2 · A retirement instrument for service members</title>
+<title>Military Pension Studio v3.3 · A retirement instrument for service members</title>
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -194,19 +194,145 @@
   @media(max-width:768px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
   .footer{border-top:1px solid var(--line);padding:40px 0;color:var(--ink-3);font-size:12px;line-height:1.6}
 
+  /* ========================================================================
+     PRINT MEMO · Single-page landscape Letter
+     Hidden on screen, replaces everything when printing.
+     ======================================================================== */
+  .print-memo{display:none}
+
+  @page{size:letter landscape;margin:0.3in}
+
   @media print{
-    :root{--bg:#fff;--ink:#000;--ink-2:#333;--ink-3:#666;--surface:#fff;--surface-2:#fafafa;--surface-3:#f0f0f0;--line:#ddd;--line-2:#bbb;--accent:#8B6914}
-    html,body{background:#fff;color:#000}
-    .topbar,.nav,.drawer,.drawer-backdrop,.drawer-fab,.hero-actions,.btn{display:none !important}
-    .section{break-inside:avoid;padding:16px 0;border-color:#ddd}
-    .surface,.surface-inset,.optimizer,.answer,.elig-card,details summary,.details-body,.shoot-row,.learn{background:#fff;border-color:#ccc;page-break-inside:avoid}
-    .hero{padding:24px 0 16px}.hero-h{font-size:28px}
-    .bar-rect{background:#999 !important}
-    .bar.selected .bar-rect{background:#8B6914 !important}
-    .bar.best .bar-rect{background:#3a7048 !important}
-    details:not([open]) summary::after{content:""}
-    .learn{break-inside:avoid}
-    .learn:not([open]){display:none}
+    html,body{background:#fff;color:#000;font-size:9.5px;line-height:1.35}
+    body * {visibility:hidden}
+    .print-memo,.print-memo *{visibility:visible}
+    .print-memo{
+      display:grid !important;
+      grid-template-rows:auto auto auto 1fr auto;
+      gap:8px;
+      position:absolute;left:0;top:0;width:100%;
+      padding:0;color:#000;
+      font-family:'Inter','Helvetica Neue',Arial,sans-serif;
+    }
+    .pm-header{
+      display:grid;grid-template-columns:auto 1fr auto;gap:8px;
+      align-items:center;
+      padding-bottom:6px;border-bottom:1.5px solid #000;
+    }
+    .pm-brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;letter-spacing:-0.01em}
+    .pm-brand svg{color:#8B6914}
+    .pm-title{text-align:center;font-size:12px;font-weight:600;letter-spacing:0.02em}
+    .pm-meta{text-align:right;font-size:9px;color:#444}
+
+    .pm-identity{
+      background:#f5f3ee;border:1px solid #ccc;border-radius:4px;
+      padding:7px 10px;font-size:10.5px;
+      display:flex;flex-wrap:wrap;gap:14px;
+    }
+    .pm-identity b{font-weight:700;color:#000}
+    .pm-identity .sep{color:#bbb}
+
+    .pm-hero{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+      border:1.5px solid #000;border-radius:4px;background:#fff;
+    }
+    .pm-hero-cell{padding:11px 13px;border-right:1px solid #ccc}
+    .pm-hero-cell:last-child{border-right:none}
+    .pm-hero-label{
+      font-size:8.5px;text-transform:uppercase;letter-spacing:0.08em;
+      color:#666;font-weight:700;margin-bottom:4px;
+    }
+    .pm-hero-value{
+      font-size:23px;font-weight:600;letter-spacing:-0.02em;
+      font-variant-numeric:tabular-nums;line-height:1;
+    }
+    .pm-hero-value.accent{color:#8B6914}
+    .pm-hero-sub{font-size:8.5px;color:#555;margin-top:4px;line-height:1.3}
+
+    .pm-body{
+      display:grid;
+      grid-template-columns:1fr 1.1fr 1fr;gap:10px;
+      align-items:stretch;
+    }
+    .pm-panel{
+      border:1px solid #999;border-radius:4px;
+      padding:9px 11px;display:flex;flex-direction:column;
+    }
+    .pm-panel-title{
+      font-size:9px;text-transform:uppercase;letter-spacing:0.1em;
+      color:#000;font-weight:700;margin-bottom:7px;
+      border-bottom:1px solid #eee;padding-bottom:4px;
+    }
+    .pm-line{
+      display:flex;justify-content:space-between;align-items:baseline;
+      padding:2.5px 0;font-size:10px;
+    }
+    .pm-line + .pm-line{border-top:1px dotted #eee}
+    .pm-line-label{flex:1}
+    .pm-line-note{font-size:7.5px;color:#888;font-weight:400;margin-left:4px}
+    .pm-line-val{font-variant-numeric:tabular-nums;font-weight:500;color:#000;text-align:right;white-space:nowrap}
+    .pm-line-val.neg{color:#666}
+    .pm-line.total{
+      margin-top:5px;padding-top:6px;
+      border-top:1.5px solid #000 !important;
+      font-weight:700;font-size:11px;
+    }
+    .pm-line.total .pm-line-val{color:#8B6914;font-size:13px}
+
+    .pm-bars{
+      display:grid;grid-template-columns:repeat(12,1fr);
+      gap:2px;align-items:end;height:80px;margin:5px 0 3px;
+    }
+    .pm-bar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+    .pm-bar-rect{width:100%;background:#bbb;min-height:3px;border-radius:1.5px 1.5px 0 0}
+    .pm-bar.selected .pm-bar-rect{background:#8B6914}
+    .pm-bar.best:not(.selected) .pm-bar-rect{background:#2d6e3e}
+    .pm-bar-label{font-size:7px;color:#444;margin-top:2px;font-weight:600}
+    .pm-bar.selected .pm-bar-label{color:#8B6914}
+    .pm-bar.best:not(.selected) .pm-bar-label{color:#2d6e3e}
+
+    .pm-loc{margin-bottom:6px}
+    .pm-loc-head{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:9.5px;margin-bottom:2px}
+    .pm-loc-name{display:flex;align-items:center;gap:5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .pm-loc-bar{height:5px;background:#eee;border-radius:99px;overflow:hidden}
+    .pm-loc-bar-fill{height:100%;background:#8B6914;border-radius:99px}
+    .pm-loc.leader .pm-loc-bar-fill{background:#2d6e3e}
+    .pm-loc-val{font-variant-numeric:tabular-nums;font-weight:600;font-size:10px;color:#000}
+    .pm-loc-tag{font-size:6.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:1px 4px;border-radius:2px;background:#eee;color:#555}
+    .pm-loc-tag.expat{background:#e8edf2;color:#3d5566}
+    .pm-loc-tag.home{background:#fff3d8;color:#8B6914}
+    .pm-loc-tag.best{background:#e0f0e3;color:#2d6e3e}
+    .pm-loc-detail{font-size:7.5px;color:#666;line-height:1.3;margin-top:1px}
+
+    .pm-callout{
+      background:#f8f6ef;border-left:2.5px solid #8B6914;
+      padding:5px 8px;font-size:9px;margin-top:auto;line-height:1.4;
+    }
+    .pm-callout b{font-weight:700;color:#000}
+
+    .pm-sub{margin-top:7px;padding-top:6px;border-top:1px dashed #ddd}
+    .pm-sub-title{
+      font-size:8px;text-transform:uppercase;letter-spacing:0.08em;
+      color:#666;font-weight:700;margin-bottom:4px;
+    }
+
+    .pm-footer{
+      display:grid;grid-template-columns:1.4fr 1fr;gap:14px;
+      padding-top:6px;border-top:1px solid #ccc;
+      font-size:8px;color:#555;line-height:1.4;
+    }
+    .pm-footer b{color:#000;font-weight:700}
+    .pm-checklist{
+      list-style:none;padding:0;margin:0;
+      display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;
+    }
+    .pm-checklist li{
+      display:flex;align-items:flex-start;gap:5px;line-height:1.3;font-size:8.5px;color:#000;
+    }
+    .pm-checklist li::before{
+      content:"";display:inline-block;width:8px;height:8px;border:1px solid #000;
+      flex:none;margin-top:1px;border-radius:1px;
+    }
   }
 </style>
 </head>
@@ -1322,7 +1448,7 @@ function App(){
         </section>
 
         <footer className="footer">
-          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.2 · A planning instrument for service members.</div>
+          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.3 · A planning instrument for service members.</div>
           Official retirement pay is determined by Defense Finance and Accounting Service (DFAS) based on your actual record. VA rates reflect 2026 (2.8% Cost of Living Adjustment, effective Dec 1 2025). Federal tax brackets per IRS Rev. Proc. 2025-32. State cost of living indices rebased from C2ER 2025. Expat cost of living from Numbeo 2026. Tax treaty status is general; consult a tax professional for your specific situation. Property tax effective rates from Tax Foundation 2025. CRDP/CRSC, REDUX age-62 catch-up, and BRS lump sum are simplified models. Built in conversation with Claude. Verify with your retirement services office and a tax professional before locking in a date.
         </footer>
       </div>
@@ -1391,6 +1517,28 @@ function App(){
           </div>
         </div>
       </div>
+
+      {/* Print-only memo. Hidden on screen, replaces everything when printing. */}
+      <PrintMemo
+        calc={calc}
+        rank={rank}
+        system={system}
+        years={years}
+        retireMonth={retireMonth}
+        retireAge={retireAge}
+        vaRating={vaRating}
+        hasSpouse={hasSpouse}
+        kids={kids}
+        filingStatus={filingStatus}
+        homeLocation={homeLocation}
+        compareLocations={compareLocations}
+        ssClaimAge={ssClaimAge}
+        ssBenefitFRA={ssBenefitFRA}
+        sbpOn={sbpOn}
+        sbpBasePct={sbpBasePct}
+        civilianSalary={civilianSalary}
+        annualCOLA={annualCOLA}
+      />
     </div>
   );
 }
@@ -1398,6 +1546,220 @@ function App(){
 /* =========================================================================
    SUBCOMPONENTS
    ========================================================================= */
+function PrintMemo(props){
+  const {calc,rank,system,years,retireMonth,retireAge,vaRating,hasSpouse,kids,
+         filingStatus,homeLocation,ssClaimAge,sbpOn,sbpBasePct}=props;
+  const today=new Date();
+  const dateStr=today.toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
+  const systemLabel={high3:"High-3",brs:"BRS",redux:"REDUX",finalpay:"Final Pay"}[system];
+
+  return(
+    <div className="print-memo">
+      <div className="pm-header">
+        <div className="pm-brand">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M12 2L4 6V12C4 17 7.5 21 12 22C16.5 21 20 17 20 12V6L12 2Z" strokeLinejoin="round"/>
+            <path d="M12 8L13.5 11L17 11.5L14.5 14L15 17.5L12 16L9 17.5L9.5 14L7 11.5L10.5 11L12 8Z" fill="currentColor"/>
+          </svg>
+          Military Pension Studio
+        </div>
+        <div className="pm-title">Retirement Decision Memo</div>
+        <div className="pm-meta">Generated {dateStr} · v3.3</div>
+      </div>
+
+      <div className="pm-identity">
+        <span><b>{rank}</b> · {years} yrs · <b>{systemLabel}</b></span>
+        <span className="sep">·</span>
+        <span><b>{vaRating}%</b> VA{hasSpouse?" w/spouse":""}{kids>0?` + ${kids} kid${kids>1?"s":""}`:""}</span>
+        <span className="sep">·</span>
+        <span>Retire <b>{MONTHS[retireMonth]}</b> at age <b>{retireAge}</b></span>
+        <span className="sep">·</span>
+        <span>Home: <b>{calc.homeCalc.name}</b></span>
+        <span className="sep">·</span>
+        <span>{filingStatus==="mfj"?"Married Filing Jointly":"Single"}</span>
+      </div>
+
+      <div className="pm-hero">
+        <div className="pm-hero-cell">
+          <div className="pm-hero-label">Net monthly</div>
+          <div className="pm-hero-value accent">{fmt(calc.homeCalc.netTotal)}</div>
+          <div className="pm-hero-sub">after modeled tax, SBP, TRICARE</div>
+        </div>
+        <div className="pm-hero-cell">
+          <div className="pm-hero-label">Pension net</div>
+          <div className="pm-hero-value">{fmt(calc.homeCalc.netPension)}</div>
+          <div className="pm-hero-sub">{calc.eligibleCRDP?"CRDP active · no waiver":"VA waiver applied"}</div>
+        </div>
+        <div className="pm-hero-cell">
+          <div className="pm-hero-label">VA tax-free</div>
+          <div className="pm-hero-value">{fmt(calc.va)}</div>
+          <div className="pm-hero-sub">{vaRating}% combined rating</div>
+        </div>
+        <div className="pm-hero-cell">
+          <div className="pm-hero-label">Lifetime ({calc.yearsRetired} yr)</div>
+          <div className="pm-hero-value">{fmtM(calc.lifetimeTotal)}</div>
+          <div className="pm-hero-sub">to age {calc.totalLifespan}</div>
+        </div>
+      </div>
+
+      <div className="pm-body">
+        {/* Column 1: Income breakdown */}
+        <div className="pm-panel">
+          <div className="pm-panel-title">Monthly income breakdown</div>
+          <div className="pm-line">
+            <span className="pm-line-label">Gross pension <span className="pm-line-note">{(calc.mult*100).toFixed(1)}%</span></span>
+            <span className="pm-line-val">{fmt(calc.grossPension)}</span>
+          </div>
+          {calc.waiverAmount>0&&(
+            <div className="pm-line">
+              <span className="pm-line-label">VA waiver</span>
+              <span className="pm-line-val neg">−{fmt(calc.waiverAmount)}</span>
+            </div>
+          )}
+          {calc.sbpPremium>0&&(
+            <div className="pm-line">
+              <span className="pm-line-label">SBP premium <span className="pm-line-note">{sbpBasePct}% base</span></span>
+              <span className="pm-line-val neg">−{fmt(calc.sbpPremium)}</span>
+            </div>
+          )}
+          <div className="pm-line">
+            <span className="pm-line-label">TRICARE</span>
+            <span className="pm-line-val neg">−{fmt(calc.tricareMonthly)}</span>
+          </div>
+          <div className="pm-line">
+            <span className="pm-line-label">Federal tax <span className="pm-line-note">{(calc.effectiveFedRate*100).toFixed(1)}% eff</span></span>
+            <span className="pm-line-val neg">−{fmt(calc.homeCalc.monthlyFedTaxPension)}</span>
+          </div>
+          {calc.homeCalc.monthlyStateTaxPension>0&&(
+            <div className="pm-line">
+              <span className="pm-line-label">State tax</span>
+              <span className="pm-line-val neg">−{fmt(calc.homeCalc.monthlyStateTaxPension)}</span>
+            </div>
+          )}
+          <div className="pm-line">
+            <span className="pm-line-label">VA disability <span className="pm-line-note">tax-free</span></span>
+            <span className="pm-line-val">+{fmt(calc.va)}</span>
+          </div>
+          {calc.crscRestore>0&&(
+            <div className="pm-line">
+              <span className="pm-line-label">CRSC restore</span>
+              <span className="pm-line-val">+{fmt(calc.crscRestore)}</span>
+            </div>
+          )}
+          <div className="pm-line total">
+            <span className="pm-line-label">Net monthly</span>
+            <span className="pm-line-val">{fmt(calc.homeCalc.netTotal)}</span>
+          </div>
+        </div>
+
+        {/* Column 2: Date optimizer */}
+        <div className="pm-panel">
+          <div className="pm-panel-title">Best retirement month</div>
+          <div className="pm-bars">
+            {calc.trapRows.map((r,i)=>{
+              const max=Math.max(...calc.trapRows.map(x=>x.total));
+              const h=Math.max(8,(r.total/max)*100);
+              const sel=i===retireMonth, best=i===calc.bestRow.monthIdx;
+              return(
+                <div key={i} className={`pm-bar ${sel?"selected":""} ${best?"best":""}`}>
+                  <div className="pm-bar-rect" style={{height:`${h}%`}}/>
+                  <div className="pm-bar-label">{SHORT_MONTHS[i].charAt(0)}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="pm-line">
+            <span className="pm-line-label">Selected: <b>{MONTHS[retireMonth]}</b></span>
+            <span className="pm-line-val">{fmt(calc.selectedRow.total)}/mo</span>
+          </div>
+          <div className="pm-line">
+            <span className="pm-line-label">Best: <b>{MONTHS[calc.bestRow.monthIdx]}</b></span>
+            <span className="pm-line-val">{fmt(calc.bestRow.total)}/mo</span>
+          </div>
+          <div className="pm-callout">
+            {calc.trapDelta>1
+              ?<><b>Trap cost:</b> {fmt(calc.trapDelta)}/mo or {fmt(calc.trapLifetime)} over {calc.yearsRetired} yrs. Move to {MONTHS[calc.bestRow.monthIdx]}.</>
+              :<><b>Optimal date.</b> Your selected month captures the strongest first-year cost of living adjustment.</>}
+          </div>
+          <div className="pm-sub">
+            <div className="pm-sub-title">Other date factors</div>
+            <div style={{fontSize:8.5,color:"#444",lineHeight:1.5}}>
+              {rank.startsWith("O")&&<>• <b>Time in grade:</b> Officers O-4+ need 3 yrs at current grade. Check 10 USC 1370.<br/></>}
+              <>• <b>Jan 1 raise:</b> Retire Feb+ to lock the new pay rate into high-3.<br/></>
+              <>• <b>BDD claim:</b> File VA claim 180-90 days pre-retirement.</>
+            </div>
+          </div>
+        </div>
+
+        {/* Column 3: Location + Wealth */}
+        <div className="pm-panel">
+          <div className="pm-panel-title">Where to live · monthly buying power</div>
+          {[...calc.compareCalcs].sort((a,b)=>b.buyingPower-a.buyingPower).map(s=>{
+            const max=Math.max(...calc.compareCalcs.map(c=>c.buyingPower));
+            const leader=s.code===calc.bestLocation.code;
+            const isHome=s.code===homeLocation;
+            return(
+              <div key={s.code} className={`pm-loc ${leader?"leader":""}`}>
+                <div className="pm-loc-head">
+                  <div className="pm-loc-name">
+                    {s.name}
+                    {isHome&&<span className="pm-loc-tag home">HOME</span>}
+                    {leader&&!isHome&&<span className="pm-loc-tag best">BEST</span>}
+                    {s.isExpat&&!isHome&&<span className="pm-loc-tag expat">EXPAT</span>}
+                  </div>
+                  <span className="pm-loc-val">{fmt(s.buyingPower)}</span>
+                </div>
+                <div className="pm-loc-bar">
+                  <div className="pm-loc-bar-fill" style={{width:`${(s.buyingPower/max)*100}%`}}/>
+                </div>
+                <div className="pm-loc-detail">COL {s.col} · {s.isExpat?"no US state tax":`tax ${s.stateTaxNote}`}{!s.isExpat&&s.propTaxAnnual>0?` · prop ${fmt(s.propTaxAnnual)}/yr`:""}</div>
+              </div>
+            );
+          })}
+          <div className="pm-sub">
+            <div className="pm-sub-title">Wealth + key decisions</div>
+            <div className="pm-line">
+              <span className="pm-line-label">TSP at age 67</span>
+              <span className="pm-line-val">{fmt(calc.tspFV)}</span>
+            </div>
+            <div className="pm-line">
+              <span className="pm-line-label">Social Security <span className="pm-line-note">age {ssClaimAge}</span></span>
+              <span className="pm-line-val">{fmt(calc.ssMonthly)}/mo</span>
+            </div>
+            <div className="pm-line">
+              <span className="pm-line-label">SBP coverage</span>
+              <span className="pm-line-val">{sbpOn?fmt(calc.sbpBase*0.55)+"/mo":"none"}</span>
+            </div>
+            <div className="pm-line">
+              <span className="pm-line-label">Target civilian salary</span>
+              <span className="pm-line-val">{fmt(calc.targetCivilianAnnual)}/yr</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="pm-footer">
+        <div>
+          <div style={{fontWeight:700,color:"#000",marginBottom:4,fontSize:9}}>Verify before locking in</div>
+          <ul className="pm-checklist">
+            <li>VA disability rating final on DD-214</li>
+            <li>Civilian salary offer in hand</li>
+            <li>State of residence at retirement</li>
+            <li>SBP base amount elected</li>
+            <li>Social Security claim age confirmed</li>
+            <li>Tax pro reviewed effective rate</li>
+          </ul>
+        </div>
+        <div style={{fontSize:7.5,color:"#666",lineHeight:1.5}}>
+          Planning estimate only. Official figures from <b>DFAS</b>. VA rates per <b>VA.gov 2026 tables</b>. Federal brackets per <b>IRS Rev. Proc. 2025-32</b>. Cost-of-living from <b>C2ER 2025</b> (states) and <b>Numbeo 2026</b> (international). Not financial, tax, or legal advice.
+          <br/><br/>
+          <b>Refresh anytime at:</b> stevennolanjr-dev.github.io/military-pension-studio
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Topbar(){
   return(
     <div className="topbar">
@@ -1407,7 +1769,7 @@ function Topbar(){
           <span className="brand-name">Military Pension Studio</span>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.2</span>
+          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.3</span>
         </div>
       </div>
     </div>
