@@ -203,16 +203,26 @@
   @page{size:letter landscape;margin:0.3in}
 
   @media print{
-    html,body{background:#fff;color:#000;font-size:9.5px;line-height:1.35}
-    body * {visibility:hidden}
-    .print-memo,.print-memo *{visibility:visible}
+    html,body{
+      background:#fff;color:#000;
+      font-size:9.5px;line-height:1.35;
+      margin:0;padding:0;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+    /* Hide every child of the App root, then re-show the memo only.
+       Using display:none (not visibility:hidden) so hidden elements take no layout space. */
+    #root > div > *{display:none !important}
+    #root > div > .print-memo{display:grid !important}
     .print-memo{
-      display:grid !important;
       grid-template-rows:auto auto auto 1fr auto;
       gap:8px;
-      position:absolute;left:0;top:0;width:100%;
-      padding:0;color:#000;
+      width:100%;
+      min-height:7.6in;
+      color:#000;
       font-family:'Inter','Helvetica Neue',Arial,sans-serif;
+      page-break-inside:avoid;
+      break-inside:avoid;
     }
     .pm-header{
       display:grid;grid-template-columns:auto 1fr auto;gap:8px;
