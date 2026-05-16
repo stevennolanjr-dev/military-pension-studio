@@ -1,0 +1,1698 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Military Pension Studio v3.2 · A retirement instrument for service members</title>
+<link rel="preconnect" href="https://rsms.me/" />
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root{
+    --ink:#ededea;--ink-2:#a6a6a1;--ink-3:#6b6b66;--ink-4:#3a3a36;
+    --bg:#0c0c0c;--surface:#141414;--surface-2:#181818;--surface-3:#1f1f1f;
+    --line:rgba(255,255,255,0.05);--line-2:rgba(255,255,255,0.10);
+    --accent:#c79a3a;--accent-soft:rgba(199,154,58,0.12);
+    --pos:#5fb27a;--neg:#e26a5c;--info:#5a7a8a;
+    --radius:14px;--radius-s:10px;--duration:200ms;--ease:cubic-bezier(.2,0,0,1);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);min-height:100vh}
+  body{font-family:'Inter',ui-sans-serif,system-ui,sans-serif;font-feature-settings:'cv11','ss03';-webkit-font-smoothing:antialiased;font-size:15px;line-height:1.5}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:'tnum'}
+  .display{letter-spacing:-0.035em;font-weight:500}
+  button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+  input,select,textarea{font:inherit;color:inherit;background:none;border:none;outline:none}
+  ::selection{background:var(--accent);color:#1a1303}
+  a{color:inherit;text-decoration:none}
+
+  .page{max-width:1180px;margin:0 auto;padding:0 24px}
+  @media(max-width:768px){.page{padding:0 16px}}
+
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(12,12,12,0.85);backdrop-filter:blur(20px) saturate(140%);border-bottom:1px solid var(--line);height:54px}
+  .topbar-inner{display:flex;align-items:center;justify-content:space-between;height:100%}
+  .brand{display:flex;align-items:center;gap:10px;color:var(--ink)}
+  .brand-mark{width:22px;height:22px;display:grid;place-items:center;color:var(--accent)}
+  .brand-name{font-weight:600;letter-spacing:-0.01em;font-size:15px}
+
+  .hero{padding:80px 0 56px}
+  @media(max-width:768px){.hero{padding:48px 0 40px}}
+  .hero-tag{color:var(--ink-2);font-size:13px;margin-bottom:18px}
+  .hero-tag b{color:var(--accent);font-weight:500}
+  .hero-h{font-size:clamp(36px,5.5vw,64px);letter-spacing:-0.04em;font-weight:500;line-height:1.02;max-width:880px}
+  .hero-h .accent{color:var(--accent)}
+  .hero-sub{margin-top:22px;color:var(--ink-2);font-size:clamp(15px,1.6vw,17px);max-width:660px;line-height:1.55}
+  .hero-actions{margin-top:30px;display:flex;gap:10px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:99px;font-size:13.5px;font-weight:500;border:1px solid var(--line-2);color:var(--ink);transition:background var(--duration) var(--ease)}
+  .btn:hover{background:var(--surface)}
+  .btn-primary{background:var(--ink);color:#0c0c0c;border-color:var(--ink)}
+  .btn-primary:hover{background:#fff}
+
+  .nav{position:sticky;top:54px;z-index:25;background:rgba(12,12,12,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);margin-bottom:40px}
+  .nav-inner{display:flex;gap:2px;padding:6px 0;overflow-x:auto;scrollbar-width:none}
+  .nav-inner::-webkit-scrollbar{display:none}
+  .nav-item{flex:none;padding:8px 14px;border-radius:99px;font-size:13px;color:var(--ink-2);font-weight:500;transition:all var(--duration) var(--ease);white-space:nowrap}
+  .nav-item:hover{color:var(--ink)}
+  .nav-item.active{background:var(--surface-2);color:var(--ink)}
+
+  .section{padding:32px 0 64px;border-top:1px solid var(--line)}
+  .section:first-of-type{border-top:none;padding-top:8px}
+  .section-h{display:flex;align-items:baseline;justify-content:space-between;gap:24px;margin-bottom:8px;flex-wrap:wrap}
+  .section-title{font-size:clamp(24px,3vw,32px);letter-spacing:-0.025em;font-weight:500;line-height:1.1}
+  .section-meta{color:var(--ink-3);font-size:13px}
+  .section-lede{color:var(--ink-2);font-size:15px;line-height:1.6;max-width:680px;margin-top:8px;margin-bottom:32px}
+
+  .surface{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px}
+  .surface-inset{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-s);padding:18px}
+
+  .answer{display:grid;border:1px solid var(--line-2);border-radius:var(--radius);overflow:hidden;background:linear-gradient(180deg,var(--surface-2) 0%,var(--surface) 100%)}
+  .answer-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr}
+  @media(max-width:768px){.answer-row{grid-template-columns:1fr 1fr}}
+  .answer-cell{padding:22px 24px;border-right:1px solid var(--line)}
+  .answer-cell:last-child{border-right:none}
+  @media(max-width:768px){.answer-cell:nth-child(2){border-right:none}.answer-cell:nth-child(1),.answer-cell:nth-child(2){border-bottom:1px solid var(--line)}}
+  .answer-label{color:var(--ink-3);font-size:11.5px;text-transform:uppercase;letter-spacing:0.08em;font-weight:500;margin-bottom:8px}
+  .answer-value{font-size:28px;letter-spacing:-0.02em;font-weight:500;line-height:1}
+  .answer-value.big{font-size:40px}
+  .answer-sub{color:var(--ink-3);font-size:12px;margin-top:6px}
+
+  .stack{height:48px;border-radius:8px;overflow:hidden;display:flex;background:var(--surface-2);border:1px solid var(--line)}
+  .stack-seg{height:100%;transition:flex var(--duration) var(--ease);border-right:1px solid rgba(0,0,0,0.3)}
+  .stack-seg:last-child{border-right:none}
+  .stack-key{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:18px}
+  .stack-key-item{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-2)}
+  .stack-key-swatch{width:10px;height:10px;border-radius:2px;flex:none}
+  .stack-key-val{margin-left:auto;color:var(--ink);font-weight:500}
+
+  .optimizer{padding:24px 24px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);min-height:340px}
+  .bars{display:grid;grid-template-columns:repeat(12,1fr);gap:6px;align-items:end;height:240px;padding-top:32px}
+  .bar{position:relative;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;cursor:pointer;transition:transform var(--duration) var(--ease)}
+  .bar:hover{transform:translateY(-2px)}
+  .bar-rect{width:100%;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--ink-4) 0%,#1c1c1c 100%);transition:background var(--duration) var(--ease),height var(--duration) var(--ease);min-height:4px;position:relative}
+  .bar.selected .bar-rect{background:linear-gradient(180deg,var(--accent) 0%,rgba(199,154,58,0.4) 100%)}
+  .bar.best:not(.selected) .bar-rect{background:linear-gradient(180deg,var(--pos) 0%,rgba(95,178,122,0.4) 100%)}
+  .bar-label{font-size:11.5px;color:var(--ink-3);margin-top:8px;font-weight:500}
+  .bar.selected .bar-label{color:var(--accent)}
+  .bar.best:not(.selected) .bar-label{color:var(--pos)}
+  .bar-val{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:10.5px;color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums;opacity:0;transition:opacity var(--duration)}
+  .bar:hover .bar-val,.bar.selected .bar-val,.bar.best .bar-val{opacity:1}
+
+  .shootout{display:grid;gap:14px}
+  .shoot-row{display:grid;grid-template-columns:120px 1fr auto;gap:18px;align-items:center;padding:14px 18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-s);transition:border-color var(--duration)}
+  .shoot-row.leader{border-color:var(--accent)}
+  .shoot-state{font-weight:500;font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .shoot-bar{height:8px;background:var(--surface-3);border-radius:99px;overflow:hidden}
+  .shoot-bar-fill{height:100%;background:var(--accent);border-radius:99px;transition:width var(--duration) var(--ease)}
+  .shoot-val{font-variant-numeric:tabular-nums;font-weight:500;font-size:15px;text-align:right;min-width:90px}
+  .shoot-detail{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-2)}
+  .shoot-detail b{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+  @media(max-width:640px){.shoot-row{grid-template-columns:90px 1fr auto;gap:10px;padding:12px}}
+
+  .drawer-backdrop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,0.4);opacity:0;pointer-events:none;transition:opacity var(--duration) var(--ease)}
+  .drawer-backdrop.open{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);z-index:50;background:var(--surface);border-left:1px solid var(--line-2);transform:translateX(100%);transition:transform var(--duration) var(--ease);display:flex;flex-direction:column}
+  .drawer.open{transform:translateX(0)}
+  .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--line);flex:none}
+  .drawer-body{flex:1;overflow-y:auto;padding:8px 0 80px}
+  .drawer-section{padding:18px 24px;border-bottom:1px solid var(--line)}
+  .drawer-section h4{font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-3);font-weight:600;margin-bottom:14px}
+  .drawer-fab{position:fixed;bottom:24px;right:24px;z-index:35;padding:14px 20px;background:var(--ink);color:#0c0c0c;border-radius:99px;font-weight:500;font-size:14px;box-shadow:0 12px 32px rgba(0,0,0,0.4);display:flex;align-items:center;gap:8px;transition:transform var(--duration) var(--ease)}
+  .drawer-fab:hover{transform:translateY(-2px)}
+
+  .field{display:block;margin-bottom:14px}
+  .field-label{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--ink-2);font-weight:500;margin-bottom:6px}
+  .field-value{color:var(--accent);font-weight:500;font-variant-numeric:tabular-nums;font-size:13px}
+  .field-help{font-size:11.5px;color:var(--ink-3);margin-top:6px;line-height:1.4}
+  .ctrl{width:100%;padding:10px 12px;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;font-size:14px;font-variant-numeric:tabular-nums;transition:border-color var(--duration)}
+  .ctrl:focus{border-color:var(--accent)}
+  select.ctrl{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23a6a6a1' d='M2 3.5l3 3 3-3'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px}
+  .ctrl-prefix-wrap{display:flex;align-items:center;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .ctrl-prefix-wrap:focus-within{border-color:var(--accent)}
+  .ctrl-prefix-wrap span{padding:0 4px 0 10px;color:var(--ink-3);font-size:14px}
+  .ctrl-prefix-wrap input{padding:10px 12px 10px 4px;flex:1;font-variant-numeric:tabular-nums}
+  .range-track{-webkit-appearance:none;width:100%;height:4px;background:var(--surface-3);border-radius:99px;outline:none;margin:8px 0}
+  .range-track::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--accent);border-radius:50%;cursor:pointer;box-shadow:0 0 0 3px var(--accent-soft)}
+  .range-track::-moz-range-thumb{width:16px;height:16px;background:var(--accent);border:none;border-radius:50%;cursor:pointer}
+  .seg{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:3px;gap:2px}
+  .seg button{flex:1;padding:7px;border-radius:5px;font-size:12.5px;font-weight:500;color:var(--ink-3);transition:all var(--duration) var(--ease)}
+  .seg button.on{background:var(--surface-3);color:var(--ink)}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-size:13.5px}
+  .toggle{position:relative;width:34px;height:20px;background:var(--surface-3);border-radius:99px;cursor:pointer;flex:none;transition:background var(--duration)}
+  .toggle.on{background:var(--accent)}
+  .toggle::after{content:"";position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform var(--duration)}
+  .toggle.on::after{transform:translateX(14px);background:#1a1303}
+
+  .pill-group{display:flex;flex-wrap:wrap;gap:6px}
+  .pill{padding:6px 12px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);font-size:12.5px;color:var(--ink-2);transition:all var(--duration) var(--ease);display:inline-flex;align-items:center;gap:4px}
+  .pill:hover{color:var(--ink);border-color:var(--line-2)}
+  .pill.active{background:var(--accent);color:#1a1303;border-color:var(--accent)}
+  .pill.expat::before{content:"";display:inline-block;width:6px;height:6px;background:var(--info);border-radius:50%;margin-right:2px}
+  .pill.expat.active::before{background:#1a1303}
+
+  .elig{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .elig-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-s);padding:18px}
+  .elig-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .elig-title{font-size:14px;font-weight:500}
+  .elig-status{font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;padding:3px 8px;border-radius:99px}
+  .elig-status.yes{color:var(--pos);background:rgba(95,178,122,0.1)}
+  .elig-status.no{color:var(--ink-3);background:rgba(255,255,255,0.04)}
+  .elig-status.warn{color:var(--accent);background:var(--accent-soft)}
+  .elig-body{font-size:12.5px;color:var(--ink-2);line-height:1.5}
+
+  details{margin-top:8px}
+  details summary{cursor:pointer;list-style:none;padding:14px 18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-s);font-size:13.5px;font-weight:500;display:flex;align-items:center;justify-content:space-between;user-select:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:"+";font-size:18px;color:var(--ink-3);transition:transform var(--duration)}
+  details[open] summary::after{content:"−"}
+  details[open] summary{border-radius:var(--radius-s) var(--radius-s) 0 0;border-bottom:none}
+  .details-body{padding:18px;background:var(--surface);border:1px solid var(--line);border-top:none;border-radius:0 0 var(--radius-s) var(--radius-s)}
+
+  /* Learn block - distinct styling */
+  .learn{margin-top:14px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-s);overflow:hidden}
+  .learn summary{padding:12px 16px;background:transparent;border:none;border-radius:0;font-size:12.5px;color:var(--ink-2)}
+  .learn[open] summary{border-bottom:1px solid var(--line)}
+  .learn summary::before{content:"";display:inline-block;width:14px;height:14px;margin-right:8px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c79a3a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4M12 8h.01'/%3E%3C/svg%3E");background-repeat:no-repeat;vertical-align:middle}
+  .learn[open] summary{background:var(--surface-3)}
+  .learn-body{padding:16px;font-size:13px;color:var(--ink-2);line-height:1.65}
+  .learn-body p{margin-bottom:10px}
+  .learn-body p:last-child{margin-bottom:0}
+  .learn-body strong{color:var(--ink);font-weight:500}
+
+  .text-pos{color:var(--pos)}.text-neg{color:var(--neg)}.text-accent{color:var(--accent)}.text-dim{color:var(--ink-2)}.text-mute{color:var(--ink-3)}
+
+  /* Confidence indicators */
+  .conf{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;vertical-align:middle}
+  .conf::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:currentColor}
+  .conf.high{color:var(--pos);background:rgba(95,178,122,0.1)}
+  .conf.medium{color:var(--accent);background:var(--accent-soft)}
+  .conf.low{color:var(--ink-2);background:rgba(255,255,255,0.05)}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:768px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+  .footer{border-top:1px solid var(--line);padding:40px 0;color:var(--ink-3);font-size:12px;line-height:1.6}
+
+  @media print{
+    :root{--bg:#fff;--ink:#000;--ink-2:#333;--ink-3:#666;--surface:#fff;--surface-2:#fafafa;--surface-3:#f0f0f0;--line:#ddd;--line-2:#bbb;--accent:#8B6914}
+    html,body{background:#fff;color:#000}
+    .topbar,.nav,.drawer,.drawer-backdrop,.drawer-fab,.hero-actions,.btn{display:none !important}
+    .section{break-inside:avoid;padding:16px 0;border-color:#ddd}
+    .surface,.surface-inset,.optimizer,.answer,.elig-card,details summary,.details-body,.shoot-row,.learn{background:#fff;border-color:#ccc;page-break-inside:avoid}
+    .hero{padding:24px 0 16px}.hero-h{font-size:28px}
+    .bar-rect{background:#999 !important}
+    .bar.selected .bar-rect{background:#8B6914 !important}
+    .bar.best .bar-rect{background:#3a7048 !important}
+    details:not([open]) summary::after{content:""}
+    .learn{break-inside:avoid}
+    .learn:not([open]){display:none}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useMemo, useEffect, useRef } = React;
+
+/* =========================================================================
+   DATA TABLES (verified 2026)
+   ========================================================================= */
+
+// 2026 VA disability monthly compensation - veteran alone (Source: VA.gov)
+const VA_BASE_2026 = {0:0,10:180.42,20:356.66,30:552.47,40:795.84,50:1132.90,60:1435.02,70:1808.45,80:2102.15,90:2362.30,100:3938.58};
+const VA_SPOUSE_2026 = {30:65.79,40:87.38,50:108.97,60:131.58,70:153.00,80:175.00,90:196.99,100:219.61};
+const VA_CHILD_2026 = {30:32.08,40:42.77,50:54.49,60:64.16,70:75.91,80:86.60,90:97.30,100:108.04};
+
+// 2026 Federal Income Tax Brackets (Source: IRS Rev. Proc. 2025-32, Tax Foundation)
+const FED_BRACKETS_2026 = {
+  single:[[12400,0.10],[50400,0.12],[105700,0.22],[201775,0.24],[256225,0.32],[640600,0.35],[Infinity,0.37]],
+  mfj:[[24800,0.10],[100800,0.12],[211400,0.22],[403550,0.24],[512450,0.32],[768700,0.35],[Infinity,0.37]],
+};
+const FED_STD_DEDUCTION_2026 = {single:16100, mfj:32200};
+
+// US States: tax treatment + COL index + property tax + disabled vet exemption + sales tax
+// COL index baseline: US average = 100 (rebased from C2ER 2025)
+const STATES = {
+  AL:{n:"Alabama",      tax:"full", col:91, prop:0.39,vex:"100%",salesTax:9.29,type:"state"},
+  AK:{n:"Alaska",       tax:"none", col:127,prop:1.04,vex:"100%",salesTax:1.82,type:"state"},
+  AZ:{n:"Arizona",      tax:"full", col:102,prop:0.62,vex:"part",salesTax:8.40,type:"state"},
+  AR:{n:"Arkansas",     tax:"full", col:90, prop:0.61,vex:"100%",salesTax:9.46,type:"state"},
+  CA:{n:"California",   tax:"taxed",col:143,prop:0.75,vex:"part",salesTax:8.85,type:"state"},
+  CO:{n:"Colorado",     tax:"part", col:105,prop:0.51,vex:"part",salesTax:7.81,type:"state"},
+  CT:{n:"Connecticut",  tax:"full", col:113,prop:1.79,vex:"part",salesTax:6.35,type:"state"},
+  DE:{n:"Delaware",     tax:"part", col:100,prop:0.61,vex:"part",salesTax:0,   type:"state"},
+  DC:{n:"DC",           tax:"taxed",col:140,prop:0.57,vex:"none",salesTax:6.00,type:"state"},
+  FL:{n:"Florida",      tax:"none", col:101,prop:0.91,vex:"100%",salesTax:7.02,type:"state"},
+  GA:{n:"Georgia",      tax:"part", col:91, prop:0.81,vex:"part",salesTax:7.40,type:"state"},
+  HI:{n:"Hawaii",       tax:"full", col:188,prop:0.27,vex:"100%",salesTax:4.50,type:"state"},
+  ID:{n:"Idaho",        tax:"part", col:95, prop:0.62,vex:"part",salesTax:6.03,type:"state"},
+  IL:{n:"Illinois",     tax:"full", col:99, prop:2.07,vex:"100%",salesTax:8.85,type:"state"},
+  IN:{n:"Indiana",      tax:"full", col:91, prop:0.82,vex:"part",salesTax:7.00,type:"state"},
+  IA:{n:"Iowa",         tax:"full", col:90, prop:1.43,vex:"100%",salesTax:6.94,type:"state"},
+  KS:{n:"Kansas",       tax:"full", col:87, prop:1.34,vex:"part",salesTax:8.66,type:"state"},
+  KY:{n:"Kentucky",     tax:"part", col:92, prop:0.78,vex:"part",salesTax:6.00,type:"state"},
+  LA:{n:"Louisiana",    tax:"full", col:91, prop:0.55,vex:"100%",salesTax:9.55,type:"state"},
+  ME:{n:"Maine",        tax:"full", col:105,prop:1.06,vex:"part",salesTax:5.50,type:"state"},
+  MD:{n:"Maryland",     tax:"part", col:116,prop:1.05,vex:"100%",salesTax:6.00,type:"state"},
+  MA:{n:"Massachusetts",tax:"full", col:148,prop:1.04,vex:"part",salesTax:6.25,type:"state"},
+  MI:{n:"Michigan",     tax:"full", col:90, prop:1.38,vex:"100%",salesTax:6.00,type:"state"},
+  MN:{n:"Minnesota",    tax:"full", col:103,prop:1.05,vex:"part",salesTax:7.50,type:"state"},
+  MS:{n:"Mississippi",  tax:"full", col:86, prop:0.79,vex:"none",salesTax:7.07,type:"state"},
+  MO:{n:"Missouri",     tax:"full", col:88, prop:0.88,vex:"part",salesTax:8.39,type:"state"},
+  MT:{n:"Montana",      tax:"taxed",col:95, prop:0.74,vex:"part",salesTax:0,   type:"state"},
+  NE:{n:"Nebraska",     tax:"full", col:90, prop:1.54,vex:"none",salesTax:6.97,type:"state"},
+  NV:{n:"Nevada",       tax:"none", col:102,prop:0.55,vex:"part",salesTax:8.24,type:"state"},
+  NH:{n:"New Hampshire",tax:"none", col:106,prop:1.93,vex:"part",salesTax:0,   type:"state"},
+  NJ:{n:"New Jersey",   tax:"full", col:111,prop:2.23,vex:"100%",salesTax:6.61,type:"state"},
+  NM:{n:"New Mexico",   tax:"part", col:93, prop:0.78,vex:"part",salesTax:7.84,type:"state"},
+  NY:{n:"New York",     tax:"full", col:134,prop:1.40,vex:"part",salesTax:8.53,type:"state"},
+  NC:{n:"North Carolina",tax:"full",col:96, prop:0.77,vex:"part",salesTax:6.99,type:"state"},
+  ND:{n:"North Dakota", tax:"full", col:93, prop:0.89,vex:"part",salesTax:6.97,type:"state"},
+  OH:{n:"Ohio",         tax:"full", col:92, prop:1.41,vex:"part",salesTax:7.24,type:"state"},
+  OK:{n:"Oklahoma",     tax:"part", col:86, prop:0.89,vex:"100%",salesTax:8.99,type:"state"},
+  OR:{n:"Oregon",       tax:"part", col:115,prop:0.86,vex:"part",salesTax:0,   type:"state"},
+  PA:{n:"Pennsylvania", tax:"full", col:96, prop:1.41,vex:"100%",salesTax:6.34,type:"state"},
+  RI:{n:"Rhode Island", tax:"taxed",col:107,prop:1.30,vex:"part",salesTax:7.00,type:"state"},
+  SC:{n:"South Carolina",tax:"part",col:95, prop:0.55,vex:"100%",salesTax:7.50,type:"state"},
+  SD:{n:"South Dakota", tax:"none", col:90, prop:1.14,vex:"100%",salesTax:6.40,type:"state"},
+  TN:{n:"Tennessee",    tax:"none", col:89, prop:0.66,vex:"part",salesTax:9.55,type:"state"},
+  TX:{n:"Texas",        tax:"none", col:92, prop:1.60,vex:"100%",salesTax:8.20,type:"state"},
+  UT:{n:"Utah",         tax:"full", col:95, prop:0.58,vex:"part",salesTax:7.27,type:"state"},
+  VT:{n:"Vermont",      tax:"taxed",col:109,prop:1.83,vex:"part",salesTax:6.36,type:"state"},
+  VA:{n:"Virginia",     tax:"part", col:100,prop:0.86,vex:"100%",salesTax:5.77,type:"state"},
+  WA:{n:"Washington",   tax:"none", col:114,prop:0.87,vex:"part",salesTax:9.40,type:"state"},
+  WV:{n:"West Virginia",tax:"part", col:87, prop:0.54,vex:"part",salesTax:6.55,type:"state"},
+  WI:{n:"Wisconsin",    tax:"full", col:95, prop:1.51,vex:"part",salesTax:5.43,type:"state"},
+  WY:{n:"Wyoming",      tax:"none", col:91, prop:0.58,vex:"part",salesTax:5.44,type:"state"},
+};
+
+// Top 20 expat retirement destinations
+// COL rebased: Numbeo 2026 country index ÷ US (68.8) × 100 → US avg = 100 baseline
+// tax = treaty status for US gov pensions; treaty = US-only taxation per treaty article
+// visa = primary long-stay/retirement option
+// Expat country codes prefixed to avoid collision with US state codes (CO/PA/MT)
+const EXPATS = {
+  PRT:{n:"Portugal",     col:71,visa:"D7 Visa",        tax:"treaty",health:"excellent",note:"Non-Habitual Resident program ended 2024; standard rules apply.",type:"expat"},
+  MEX:{n:"Mexico",       col:62,visa:"Temporary Resident",tax:"treaty",health:"variable",note:"Largest US expat community. Common destinations: San Miguel, Merida, Mazatlan.",type:"expat"},
+  PAN:{n:"Panama",       col:66,visa:"Pensionado",     tax:"none",   health:"good",     note:"Dollarized economy. Pensionado discounts on flights, medical, utilities.",type:"expat"},
+  CRI:{n:"Costa Rica",   col:77,visa:"Pensionado",     tax:"treaty",health:"good",     note:"Stable democracy. Universal healthcare available to residents.",type:"expat"},
+  ESP:{n:"Spain",        col:75,visa:"Non-Lucrative",  tax:"treaty",health:"excellent",note:"Cannot work on this visa. World-class public health system.",type:"expat"},
+  ITA:{n:"Italy",        col:89,visa:"Elective Residence",tax:"treaty",health:"excellent",note:"7% flat tax for foreign pensions in qualifying southern towns.",type:"expat"},
+  ECU:{n:"Ecuador",      col:45,visa:"Pensionado",     tax:"treaty",health:"basic",    note:"Dollarized. Cheapest mainstream destination. Altitude in major cities.",type:"expat"},
+  COL:{n:"Colombia",     col:46,visa:"M Pensionado",   tax:"treaty",health:"good",     note:"Medellín and Bogotá have excellent private hospitals. Spanish required outside expat zones.",type:"expat"},
+  BLZ:{n:"Belize",       col:68,visa:"QRP Program",    tax:"none",   health:"limited",  note:"English-speaking. Tax-free Qualified Retired Persons program.",type:"expat"},
+  MYS:{n:"Malaysia",     col:49,visa:"MM2H",           tax:"treaty",health:"excellent",note:"Malaysia My Second Home program. Tier-1 hospitals in Kuala Lumpur and Penang.",type:"expat"},
+  THA:{n:"Thailand",     col:55,visa:"Retirement O-A", tax:"limited",health:"good",     note:"Visa requires $25K bank deposit. Tax treaty limited for pensions.",type:"expat"},
+  PHL:{n:"Philippines",  col:44,visa:"SRRV",           tax:"treaty",health:"variable", note:"Only foreign VA outpatient clinic (Manila). English widely spoken.",type:"expat"},
+  GRC:{n:"Greece",       col:78,visa:"Financially Independent Person",tax:"treaty",health:"good",note:"7% flat tax for first 15 years for foreign retirees.",type:"expat"},
+  MLT:{n:"Malta",        col:83,visa:"Retirement Programme",tax:"treaty",health:"excellent",note:"EU member. English is official language alongside Maltese.",type:"expat"},
+  CYP:{n:"Cyprus",       col:85,visa:"Permanent Residence",tax:"treaty",health:"good",note:"Pension taxed at 5% above modest threshold. EU member.",type:"expat"},
+  VNM:{n:"Vietnam",      col:38,visa:"3-month Tourist",tax:"limited",health:"basic",   note:"No formal retirement visa. Tourist visa renewable. Very low cost.",type:"expat"},
+  CZE:{n:"Czech Republic",col:77,visa:"Long-Term Residence",tax:"treaty",health:"good",note:"EU. Very safe. Prague is most popular destination.",type:"expat"},
+  URY:{n:"Uruguay",      col:81,visa:"Residence Permit",tax:"treaty",health:"good",    note:"South America's most stable democracy. Small expat scene.",type:"expat"},
+  DOM:{n:"Dominican Republic",col:56,visa:"Pensionado",tax:"treaty",health:"variable",note:"Coastal expat communities. English limited outside resorts.",type:"expat"},
+  TUR:{n:"Turkey",       col:57,visa:"Touristic Residence",tax:"treaty",health:"variable",note:"Cheap. Bodrum and Antalya popular with retirees. Political volatility.",type:"expat"},
+  IRL:{n:"Ireland",      col:103,visa:"Stamp 0",         tax:"treaty",health:"good",     note:"English-speaking. US pensions taxable only in US per treaty. High cost.",type:"expat"},
+  GBR:{n:"UK / Scotland",col:99, visa:"6-month tourist", tax:"treaty",health:"good",     note:"No retirement visa; long-stay options limited. Scotland 20-30% cheaper than London.",type:"expat"},
+  NLD:{n:"Netherlands",  col:107,visa:"DAFT (entrepreneur)",tax:"treaty",health:"excellent",note:"No formal retirement visa. DAFT requires business. Bike infrastructure unmatched.",type:"expat"},
+  FRA:{n:"France",       col:98, visa:"Long-Stay Visitor",tax:"treaty",health:"excellent",note:"US gov pensions taxable only in US. Healthcare among best in world.",type:"expat"},
+};
+
+const COLA_RATIOS=[1,1,1,0.56,0.56,0.56,0.08,0.08,0.08,0,0,0];
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const SHORT_MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+const PAY_TABLE={
+  "E-5":{6:3580,8:3825,10:4015,12:4225},
+  "E-6":{10:4690,12:4965,14:5180,16:5310,18:5420,20:5455},
+  "E-7":{12:5485,14:5740,16:5940,18:6125,20:6195,22:6420,24:6555},
+  "E-8":{14:6680,16:6900,18:7095,20:7295,22:7625,24:7820,26:8275},
+  "E-9":{18:8290,20:8695,22:9050,24:9410,26:9970,28:10000,30:10500,32:10500},
+  "W-3":{12:7245,14:7470,16:7715,18:8210,20:8520,22:8720,24:8930},
+  "W-4":{14:8275,16:8665,18:8960,20:9255,22:9690,24:10070,26:10485},
+  "W-5":{20:11010,22:11570,24:11990,26:12430,28:12860,30:13510},
+  "O-3":{6:7445,8:7820,10:8060,12:8460,14:8670},
+  "O-4":{10:9220,12:9745,14:10075,16:10260,18:10365},
+  "O-5":{14:11215,16:11920,18:12260,20:12595,22:12980,24:12980},
+  "O-6":{18:13280,20:13935,22:14290,24:14660,26:15375,28:15375,30:15685},
+  "O-7":{20:16500,22:16950,24:17225,26:17760,28:17760,30:18105},
+};
+
+const BAH_AVG={"E-5":1850,"E-6":2100,"E-7":2350,"E-8":2550,"E-9":2750,"W-3":2700,"W-4":2950,"W-5":3150,"O-3":2400,"O-4":2700,"O-5":2950,"O-6":3200,"O-7":3450};
+// 2026 Basic Allowance for Subsistence (BAS): officer ~$321, enlisted ~$466
+const BAS_AVG={"E-5":466,"E-6":466,"E-7":466,"E-8":466,"E-9":466,"W-3":321,"W-4":321,"W-5":321,"O-3":321,"O-4":321,"O-5":321,"O-6":321,"O-7":321};
+const TRICARE={prime_indiv:34,prime_family:68,select_indiv:18,select_family:38,overseas_family:60};
+
+// Social Security claim-age benefit multipliers (FRA=67 for those born 1960+)
+// Source: SSA. Early reduction = 5/9 of 1% per month for first 36 mo, then 5/12 of 1% for additional months.
+// Delayed retirement credits = 2/3 of 1% per month (8% per year) up to age 70.
+const SS_FACTORS={62:0.70, 63:0.75, 64:0.80, 65:0.867, 66:0.933, 67:1.00, 68:1.08, 69:1.16, 70:1.24};
+
+/* =========================================================================
+   CALCULATION ENGINES
+   ========================================================================= */
+
+function pensionMultiplier(system,years){
+  const cap=0.75;
+  if(system==="high3"||system==="finalpay")return Math.min(0.025*years,cap);
+  if(system==="brs")return Math.min(0.02*years,cap);
+  if(system==="redux"){
+    if(years<=20)return Math.min(0.02*years,0.40);
+    return Math.min(0.40+0.035*(years-20),cap);
+  }
+  return 0.025*years;
+}
+
+function vaMonthly(rating,hasSpouse,kids){
+  const base=VA_BASE_2026[rating]||0;
+  if(rating<30)return base;
+  const spouse=hasSpouse?(VA_SPOUSE_2026[rating]||0):0;
+  const kidPay=kids*(VA_CHILD_2026[rating]||0);
+  return base+spouse+kidPay;
+}
+
+// System-aware TIS accrual rate per additional year
+function systemTisRate(system){
+  if(system==="brs")return 0.020;
+  // REDUX: 2.0% below 20 yrs, 3.5% above. Use 2.0% as the conservative date-optimization model.
+  if(system==="redux")return 0.020;
+  return 0.025; // High-3, Final Pay
+}
+
+function colaTrapRow(base,monthIdx,annualCOLA,system){
+  const colaRatio=COLA_RATIOS[monthIdx];
+  const colaCash=base*(annualCOLA/100)*colaRatio;
+  const tisRate=systemTisRate(system);
+  const tisCash=base*tisRate*((monthIdx+1)/12);
+  return{monthIdx,colaRatio,colaCash,tisCash,total:colaCash+tisCash};
+}
+
+// Compute federal tax on annual taxable income using progressive 2026 brackets
+function computeFederalTax(taxableIncome, filingStatus){
+  if(taxableIncome<=0)return 0;
+  const brackets=FED_BRACKETS_2026[filingStatus];
+  let tax=0, prevLimit=0;
+  for(const [limit,rate] of brackets){
+    const slice=Math.max(0,Math.min(taxableIncome,limit)-prevLimit);
+    tax+=slice*rate;
+    if(taxableIncome<=limit)break;
+    prevLimit=limit;
+  }
+  return tax;
+}
+
+// Effective tax rate on total taxable income
+function effectiveFederalRate(taxableIncome,filingStatus){
+  if(taxableIncome<=0)return 0;
+  return computeFederalTax(taxableIncome,filingStatus)/taxableIncome;
+}
+
+// Life expectancy at given age (US 2024 SSA Period Life Table, approximate)
+// Returns total expected lifespan (not remaining years)
+function lifeExpectancy(currentAge,gender){
+  // Simplified: at age 45, M=80, F=84; small declines for older ages
+  const tables={M:{40:80,45:80,50:80,55:81,60:82,65:83,70:85,75:87},
+                F:{40:84,45:84,50:84,55:85,60:86,65:87,70:88,75:90}};
+  const tbl=tables[gender]||tables.M;
+  const ages=Object.keys(tbl).map(Number);
+  const closest=ages.reduce((p,c)=>Math.abs(c-currentAge)<Math.abs(p-currentAge)?c:p);
+  return tbl[closest];
+}
+
+const fmt=n=>"$"+Math.round(n).toLocaleString();
+const fmtM=n=>"$"+(n/1e6).toFixed(2)+"M";
+
+const Icon={
+  star:()=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2L4 6V12C4 17 7.5 21 12 22C16.5 21 20 17 20 12V6L12 2Z" strokeLinejoin="round"/><path d="M12 8L13.5 11L17 11.5L14.5 14L15 17.5L12 16L9 17.5L9.5 14L7 11.5L10.5 11L12 8Z" fill="currentColor"/></svg>,
+  settings:()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  close:()=><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 6l12 12M6 18L18 6"/></svg>,
+  print:()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>,
+};
+
+/* =========================================================================
+   APP
+   ========================================================================= */
+function App(){
+  // Identity
+  const [rank,setRank]=useState("O-5");
+  const [system,setSystem]=useState("high3");
+  const [years,setYears]=useState(22);
+  const [retireMonth,setRetireMonth]=useState(2);
+  const [retireAge,setRetireAge]=useState(44);
+  const [diems,setDiems]=useState("");
+  const [birthYear,setBirthYear]=useState(1982);
+  const [gender,setGender]=useState("M");
+  const [filingStatus,setFilingStatus]=useState("mfj");
+
+  useEffect(()=>{
+    if(!diems)return;
+    const y=parseInt(diems.slice(0,4));
+    if(!y||isNaN(y))return;
+    if(y<1980)setSystem("finalpay");
+    else if(y>=2018)setSystem("brs");
+    else setSystem("high3");
+  },[diems]);
+
+  const defaultPay=useMemo(()=>{
+    const r=PAY_TABLE[rank]||PAY_TABLE["O-5"];
+    const closest=Object.keys(r).map(Number).reduce((p,c)=>Math.abs(c-years)<Math.abs(p-years)?c:p);
+    return r[closest];
+  },[rank,years]);
+  const [highThree,setHighThree]=useState(defaultPay);
+  const [highThreeOverride,setHighThreeOverride]=useState(false);
+  useEffect(()=>{if(!highThreeOverride)setHighThree(defaultPay)},[defaultPay,highThreeOverride]);
+
+  // Assumptions (now mostly computed)
+  const [annualCOLA,setAnnualCOLA]=useState(2.5);
+  const [jan1Raise,setJan1Raise]=useState(3.8);
+
+  // BRS
+  const [brsLump,setBrsLump]=useState("none");
+  const [discountRate,setDiscountRate]=useState(7.0);
+
+  // VA
+  const [vaRating,setVaRating]=useState(70);
+  const [hasSpouse,setHasSpouse]=useState(true);
+  const [kids,setKids]=useState(0);
+  const [combatRelated,setCombatRelated]=useState(false);
+
+  // SBP
+  const [sbpOn,setSbpOn]=useState(true);
+  const [sbpBasePct,setSbpBasePct]=useState(100);
+
+  // TSP - growth cap raised to 200%
+  const [tspBalance,setTspBalance]=useState(220000);
+  const [tspMonthly,setTspMonthly]=useState(0);
+  const [tspGrowth,setTspGrowth]=useState(7);
+
+  // Civilian / transition
+  const [civilianSalary,setCivilianSalary]=useState(120000);
+  const [terminalDays,setTerminalDays]=useState(60);
+  const [skillBridgeMo,setSkillBridgeMo]=useState(4);
+  const [pensionLagDays,setPensionLagDays]=useState(45);
+
+  // BAH gap
+  const [lostBAH,setLostBAH]=useState(BAH_AVG[rank]||2500);
+  useEffect(()=>{setLostBAH(BAH_AVG[rank]||2500)},[rank]);
+
+  // TRICARE
+  const [tricarePlan,setTricarePlan]=useState("select_family");
+
+  // Social Security
+  const [ssBenefitFRA,setSsBenefitFRA]=useState(2800); // monthly at full retirement age 67
+  const [ssClaimAge,setSsClaimAge]=useState(67);
+
+  // Location comparison (mix states + expats)
+  const [homeLocation,setHomeLocation]=useState("VA");
+  const [compareLocations,setCompareLocations]=useState(["TX","PRT","PHL"]);
+
+  // Manual override of fed tax (advanced)
+  const [fedTaxOverride,setFedTaxOverride]=useState(null);
+
+  // Drawer
+  const [drawerOpen,setDrawerOpen]=useState(false);
+  const [activeSection,setActiveSection]=useState("decision");
+
+  /* ===== Core derived values ===== */
+  const calc=useMemo(()=>{
+    const mult=pensionMultiplier(system,years);
+    const grossPension=highThree*mult;
+    const annualPension=grossPension*12;
+
+    let monthlyAdjusted=grossPension;
+    let lumpSumPayout=0;
+    if(system==="brs"&&brsLump!=="none"){
+      const pct=brsLump==="25"?0.25:0.50;
+      const monthsToFRA=Math.max(0,(67-retireAge)*12);
+      const r=(discountRate/100)/12;
+      const colaR=(annualCOLA/100)/12;
+      const eff=r-colaR;
+      const reducedMonthly=grossPension*pct;
+      lumpSumPayout=eff>0.0001?reducedMonthly*(1-Math.pow(1+eff,-monthsToFRA))/eff:reducedMonthly*monthsToFRA;
+      monthlyAdjusted=grossPension*(1-pct);
+    }
+
+    const va=vaMonthly(vaRating,hasSpouse,kids);
+    const eligibleCRDP=vaRating>=50&&years>=20;
+    const eligibleCRSC=combatRelated&&vaRating>=10;
+    const vaWaiverRequired=!eligibleCRDP;
+    const waiverAmount=vaWaiverRequired?Math.min(va,monthlyAdjusted):0;
+    const taxableRetiredPay=monthlyAdjusted-waiverAmount;
+    const crscRestore=eligibleCRSC&&!eligibleCRDP?waiverAmount:0;
+
+    const sbpBase=monthlyAdjusted*(sbpBasePct/100);
+    const sbpPremium=sbpOn?sbpBase*0.065:0;
+    const tricareMonthly=TRICARE[tricarePlan]||0;
+
+    // AUTO-COMPUTE FEDERAL TAX
+    // Total taxable income = annualized (taxable pension - SBP premium) + civilian salary
+    // VA disability is excluded (tax-free). SBP premiums reduce taxable retired pay.
+    const annualTaxablePension=(taxableRetiredPay-sbpPremium)*12;
+    const totalTaxableIncome=annualTaxablePension+civilianSalary;
+    const stdDeduction=FED_STD_DEDUCTION_2026[filingStatus];
+    const taxableAfterDeduction=Math.max(0,totalTaxableIncome-stdDeduction);
+    const autoFedTax=computeFederalTax(taxableAfterDeduction,filingStatus);
+    const autoEffectiveRate=totalTaxableIncome>0?autoFedTax/totalTaxableIncome:0;
+    const effectiveFedRate=fedTaxOverride!==null?fedTaxOverride/100:autoEffectiveRate;
+
+    // AUTO-COMPUTE YEARS IN RETIREMENT from birth year + retirement age + life expectancy
+    const totalLifespan=lifeExpectancy(retireAge,gender);
+    const yearsRetired=Math.max(5,totalLifespan-retireAge);
+
+    // Per-location computation (handles BOTH states AND expat countries)
+    const locationCalc=(code)=>{
+      const isExpat=EXPATS[code]!==undefined;
+      const loc=isExpat?EXPATS[code]:STATES[code];
+
+      let stateTaxRate=0;
+      let stateTaxNote="";
+      if(isExpat){
+        // Expats: assume domicile abroad, severed state residency → $0 state tax
+        stateTaxRate=0;
+        stateTaxNote="domicile abroad → no US state tax";
+      } else {
+        const stateExempt=loc.tax==="full"||loc.tax==="none";
+        stateTaxRate=stateExempt?0:(loc.tax==="part"?0.025:0.05);
+        stateTaxNote=stateExempt?"exempt":`~${(stateTaxRate*100).toFixed(1)}%`;
+      }
+
+      // Apply pro-rata fed tax allocation to the pension portion
+      const pensionShareOfIncome=totalTaxableIncome>0?annualTaxablePension/totalTaxableIncome:0;
+      const annualFedTaxOnPension=autoFedTax*pensionShareOfIncome;
+      const monthlyFedTaxPension=fedTaxOverride!==null
+        ?(taxableRetiredPay-sbpPremium)*(fedTaxOverride/100)
+        :annualFedTaxOnPension/12;
+      const monthlyStateTaxPension=(taxableRetiredPay-sbpPremium)*stateTaxRate;
+      const netPension=taxableRetiredPay-sbpPremium-monthlyFedTaxPension-monthlyStateTaxPension-tricareMonthly;
+      const netTotal=netPension+va+crscRestore;
+
+      // Buying power = net income / cost-of-living index × 100
+      const buyingPower=netTotal*(100/loc.col);
+
+      // Property tax (assume $400K home; disabled vet exemption applies only at 100% rating)
+      let propTaxAnnual=0;
+      if(!isExpat){
+        const exemptHere=loc.vex==="100%"&&vaRating>=100;
+        propTaxAnnual=exemptHere?0:400000*(loc.prop/100);
+      }
+
+      return{
+        code,name:loc.n,isExpat,col:loc.col,
+        netPension,netTotal,buyingPower,
+        stateTaxRate,stateTaxNote,
+        propTaxAnnual,
+        monthlyFedTaxPension,monthlyStateTaxPension,
+        loc,
+      };
+    };
+
+    const homeCalc=locationCalc(homeLocation);
+    const compareCalcs=[homeLocation,...compareLocations].map(locationCalc);
+    const bestLocation=compareCalcs.reduce((b,c)=>c.buyingPower>b.buyingPower?c:b,compareCalcs[0]);
+
+    // COLA trap
+    const trapRows=MONTHS.map((_,i)=>colaTrapRow(grossPension,i,annualCOLA,system));
+    const selectedRow=trapRows[retireMonth];
+    const bestRow=trapRows.reduce((b,r)=>r.total>b.total?r:b,trapRows[0]);
+    const worstRow=trapRows.reduce((w,r)=>r.total<w.total?r:w,trapRows[0]);
+    const trapDelta=bestRow.total-selectedRow.total;
+    const trapLifetime=trapDelta*12*yearsRetired;
+
+    // Lifetime
+    const lifetimePension=homeCalc.netPension*12*yearsRetired;
+    const lifetimeVA=va*12*yearsRetired;
+    const lifetimeTotal=lifetimePension+lifetimeVA;
+
+    // TSP projection
+    const yrsToFRA=Math.max(0,67-retireAge);
+    const mFRA=yrsToFRA*12;
+    const mr=(tspGrowth/100)/12;
+    const tspFV=mr>0?tspBalance*Math.pow(1+mr,mFRA)+tspMonthly*((Math.pow(1+mr,mFRA)-1)/mr):tspBalance+tspMonthly*mFRA;
+
+    const civilianMonthly=civilianSalary/12;
+    // Civilian salary is taxable. Net it by fed + (home state) effective rates.
+    const civilianMonthlyNet=civilianMonthly*(1-effectiveFedRate-homeCalc.stateTaxRate);
+    const terminalLeavePay=(highThree/30)*terminalDays;
+    const householdRunway=homeCalc.netTotal+civilianMonthlyNet;
+
+    // Social Security calculations
+    const ssMonthly=ssBenefitFRA*(SS_FACTORS[ssClaimAge]||1);
+    const ssYearsCollected=Math.max(0,totalLifespan-ssClaimAge);
+    const ssLifetime=ssMonthly*12*ssYearsCollected;
+    const yearsUntilSS=Math.max(0,ssClaimAge-retireAge);
+
+    // Active duty monthly takehome (base × (1-fed_rate) + BAH + BAS, assuming no state tax on AD pay)
+    const basMonthly=BAS_AVG[rank]||321;
+    const adBaseTakehome=highThree*(1-(fedTaxOverride!==null?fedTaxOverride/100:autoEffectiveRate));
+    const adMonthlyTakehome=adBaseTakehome+lostBAH+basMonthly;
+    // Target civilian salary to match AD takehome given current retirement takehome
+    const monthlyGapVsAD=Math.max(0,adMonthlyTakehome-homeCalc.netTotal);
+    const targetCivilianAnnual=monthlyGapVsAD*12/(1-(fedTaxOverride!==null?fedTaxOverride/100:autoEffectiveRate||0.22));
+    const civilianGapStatus=civilianSalary>=targetCivilianAnnual?"matches":"short";
+
+    // Include SS in lifetime total
+    const lifetimeTotalWithSS=lifetimeTotal+ssLifetime;
+
+    return{
+      mult,grossPension,annualPension,monthlyAdjusted,lumpSumPayout,
+      va,eligibleCRDP,eligibleCRSC,waiverAmount,crscRestore,
+      sbpBase,sbpPremium,taxableRetiredPay,tricareMonthly,
+      autoFedTax,autoEffectiveRate,effectiveFedRate,totalTaxableIncome,taxableAfterDeduction,
+      yearsRetired,totalLifespan,
+      homeCalc,compareCalcs,bestLocation,
+      trapRows,selectedRow,bestRow,worstRow,trapDelta,trapLifetime,
+      lifetimePension,lifetimeVA,lifetimeTotal,lifetimeTotalWithSS,
+      tspFV,civilianMonthly,terminalLeavePay,householdRunway,
+      ssMonthly,ssYearsCollected,ssLifetime,yearsUntilSS,
+      basMonthly,adMonthlyTakehome,adBaseTakehome,monthlyGapVsAD,targetCivilianAnnual,civilianGapStatus,
+    };
+  },[system,years,highThree,retireMonth,retireAge,annualCOLA,filingStatus,gender,birthYear,rank,
+     brsLump,discountRate,vaRating,hasSpouse,kids,combatRelated,
+     sbpOn,sbpBasePct,homeLocation,compareLocations,tspBalance,tspMonthly,tspGrowth,
+     civilianSalary,terminalDays,skillBridgeMo,pensionLagDays,lostBAH,tricarePlan,fedTaxOverride,
+     ssBenefitFRA,ssClaimAge]);
+
+  useEffect(()=>{
+    const sections=["decision","timing","compare","wealth","transition","verify"];
+    const onScroll=()=>{
+      const y=window.scrollY+120;
+      for(let i=sections.length-1;i>=0;i--){
+        const el=document.getElementById(sections[i]);
+        if(el&&el.offsetTop<=y){setActiveSection(sections[i]);break}
+      }
+    };
+    window.addEventListener("scroll",onScroll,{passive:true});
+    return()=>window.removeEventListener("scroll",onScroll);
+  },[]);
+
+  const scrollTo=id=>{
+    const el=document.getElementById(id);
+    if(el)window.scrollTo({top:el.offsetTop-110,behavior:"smooth"});
+  };
+
+  return(
+    <div>
+      <Topbar/>
+
+      <div className="page">
+        <section className="hero">
+          <div className="hero-tag">2026 federal tax brackets · VA rates · cost of living · <b>live</b></div>
+          <h1 className="hero-h">
+            Net <span className="accent num">{fmt(calc.homeCalc.netTotal)}</span>/mo
+            <br/>after modeled tax, SBP, TRICARE, and location assumptions.
+          </h1>
+          <p className="hero-sub">
+            {calc.trapDelta>1
+              ?<>Retiring in <b style={{color:"var(--ink)"}}>{MONTHS[retireMonth]}</b> trails <b style={{color:"var(--ink)"}}>{MONTHS[calc.bestRow.monthIdx]}</b> by <span className="num">{fmt(calc.trapDelta)}/mo</span>. That is <span className="num">{fmt(calc.trapLifetime)}</span> over {calc.yearsRetired} expected years of retirement. </>
+              :<>Your selected month captures the strongest first-year cost of living adjustment. </>}
+            {calc.eligibleCRDP&&<>You qualify for Concurrent Retirement &amp; Disability Pay. No VA waiver. </>}
+            {calc.bestLocation.code!==homeLocation&&<><b style={{color:"var(--accent)"}}>{calc.bestLocation.name}</b> {calc.bestLocation.isExpat?"as an expat residence":""} would buy you <span className="num text-pos">{fmt(calc.bestLocation.buyingPower-calc.homeCalc.buyingPower)}/mo</span> more.</>}
+          </p>
+          <div className="hero-actions">
+            <button className="btn btn-primary" onClick={()=>setDrawerOpen(true)}><Icon.settings/>Refine inputs</button>
+            <button className="btn" onClick={()=>scrollTo("compare")}>Compare locations</button>
+            <button className="btn" onClick={()=>window.print()}><Icon.print/>Print</button>
+          </div>
+        </section>
+
+        <nav className="nav">
+          <div className="nav-inner">
+            {[["decision","Decision"],["timing","Date optimizer"],["compare","Compare locations"],["wealth","Wealth"],["transition","Transition"],["verify","Verify"]].map(([k,l])=>(
+              <button key={k} className={`nav-item ${activeSection===k?"active":""}`} onClick={()=>scrollTo(k)}>{l}</button>
+            ))}
+          </div>
+        </nav>
+
+        {/* ===== DECISION ===== */}
+        <section id="decision" className="section">
+          <div className="section-h">
+            <h2 className="section-title">Decision</h2>
+            <div className="section-meta">{system.toUpperCase()} · {years} yrs · {(calc.mult*100).toFixed(1)}% mult · {calc.homeCalc.name}</div>
+          </div>
+          <p className="section-lede">
+            The number your household actually receives, broken down so every line is traceable.
+          </p>
+
+          <div className="answer">
+            <div className="answer-row">
+              <div className="answer-cell">
+                <div className="answer-label">Net monthly <Conf level="medium"/></div>
+                <div className="answer-value big num text-accent">{fmt(calc.homeCalc.netTotal)}</div>
+                <div className="answer-sub">pension + VA, after modeled tax, SBP, TRICARE</div>
+              </div>
+              <div className="answer-cell">
+                <div className="answer-label">Pension net <Conf level="medium"/></div>
+                <div className="answer-value num">{fmt(calc.homeCalc.netPension)}</div>
+                <div className="answer-sub">{calc.eligibleCRDP?"Concurrent receipt active":"VA waiver applied"}</div>
+              </div>
+              <div className="answer-cell">
+                <div className="answer-label">VA disability (tax-free) <Conf level="high"/></div>
+                <div className="answer-value num">{fmt(calc.va)}</div>
+                <div className="answer-sub">{vaRating}% · {hasSpouse?"with spouse":"alone"}</div>
+              </div>
+              <div className="answer-cell">
+                <div className="answer-label">Lifetime ({calc.yearsRetired} yr) <Conf level="low"/></div>
+                <div className="answer-value num">{fmtM(calc.lifetimeTotal)}</div>
+                <div className="answer-sub">to age {calc.totalLifespan} · guaranteed only</div>
+              </div>
+            </div>
+          </div>
+
+          <LearnBlock title="How to read the confidence badges">
+            <p><strong>High</strong> = formula or rate table with a single authoritative source. Examples: pension multiplier (DFAS), VA disability monthly amounts (VA 2026 tables), COLA partial-credit bands (DoD memo), TRICARE annual fees.</p>
+            <p><strong>Medium</strong> = computed from inputs with a real model but with assumptions that could shift the answer 5-20%. Examples: federal effective tax (doesn't include itemized deductions, capital gains, etc.), SBP elections, BAH cliff (national average for your rank, your duty station may differ).</p>
+            <p><strong>Low</strong> = sensitive to assumptions that compound over time or come from crowdsourced data. Examples: lifetime totals (35 years of compounded COLA, growth, life expectancy), TSP projection (growth rate dominates), expat cost of living (Numbeo country averages mask big city-to-city variance), state and expat tax assumptions.</p>
+            <p>Use High-confidence numbers for hard planning. Treat Medium as directional. Treat Low as scenario-sensitive: change the underlying assumption and see how much the answer moves.</p>
+          </LearnBlock>
+
+          <div style={{marginTop:24}}>
+            <h3 style={{fontSize:14,fontWeight:500,marginBottom:14,color:"var(--ink-2)"}}>How your check is built</h3>
+            <Decomposition calc={calc}/>
+          </div>
+
+          <div style={{marginTop:24}} className="elig">
+            <EligCard title="Concurrent Retirement & Disability Pay (CRDP)" status={calc.eligibleCRDP?"yes":"no"}
+              body={calc.eligibleCRDP
+                ?"Full retired pay AND full VA. No waiver. Automatic, no application."
+                :`${vaRating<50?"VA below 50%":"Under 20 years"}. VA reduces taxable pay (still tax-free recovery via VA disability).`}/>
+            <EligCard title="Combat-Related Special Comp (CRSC)" status={calc.eligibleCRSC?(calc.eligibleCRDP?"warn":"yes"):"no"}
+              body={calc.eligibleCRSC
+                ?(calc.eligibleCRDP?"You qualify for both. DFAS auto-selects whichever pays more after tax."
+                  :`Tax-free restoration of ${fmt(calc.crscRestore)}/mo waived pay.`)
+                :"Requires combat-related disability with branch approval."}/>
+            <EligCard title="Basic Allowance for Housing (BAH) cliff" status="warn"
+              body={`You lose ~${fmt(lostBAH)}/mo BAH at retirement. Your civilian salary needs to cover this and the BAS (Basic Allowance for Subsistence) gap.`}/>
+            <EligCard title="State tax" status={calc.homeCalc.stateTaxRate===0?"yes":"warn"}
+              body={`${calc.homeCalc.name}: ${calc.homeCalc.stateTaxNote}. See "Compare locations" for shootout.`}/>
+          </div>
+
+          <LearnBlock title="Understanding the VA waiver, CRDP, and CRSC">
+            <p>Before 2004, you could not "double dip" military retirement and VA disability. Your retired pay was reduced (waived) dollar-for-dollar by your VA amount. You still received the same total dollars, but the VA portion is tax-free, so you net more than you would have without the waiver.</p>
+            <p><strong>Concurrent Retirement and Disability Pay (CRDP)</strong> restored the offset for retirees with a 50%+ VA rating AND 20+ years of service. They receive full retired pay AND full VA disability. No waiver. Automatic, no application.</p>
+            <p><strong>Combat-Related Special Compensation (CRSC)</strong> restores the waiver amount tax-free for combat-related disabilities. Available even below 50% rating. Requires application and branch approval. Cannot combine with CRDP. DFAS pays whichever is higher.</p>
+            <p>If your disabilities are combat-related (post-traumatic stress disorder from combat, blast injuries, etc.), apply for CRSC even if you have CRDP. DFAS compares both and pays you the better one.</p>
+          </LearnBlock>
+        </section>
+
+        {/* ===== TIMING ===== */}
+        <section id="timing" className="section">
+          <div className="section-h">
+            <h2 className="section-title">Date optimizer</h2>
+            <div className="section-meta">Bars model COLA + TIS accrual · TIG, Jan 1 raise, BDD shown as advisory checks</div>
+          </div>
+          <p className="section-lede">
+            The bar chart models the two forces that interact mathematically: cost of living adjustment partial-credit by month, and time in service accrual toward your next multiplier point. Three more date factors that don't fit cleanly into a 12-bar chart (Time In Grade, January 1 raise capture, VA claim window) appear as advisory cards below. Click a bar to set your retirement month.
+          </p>
+
+          <div className="optimizer">
+            <div className="bars">
+              {calc.trapRows.map((r,i)=>{
+                const max=Math.max(...calc.trapRows.map(x=>x.total));
+                const h=Math.max(8,(r.total/max)*100);
+                const sel=i===retireMonth, best=i===calc.bestRow.monthIdx;
+                return(
+                  <div key={i} className={`bar ${sel?"selected":""} ${best?"best":""}`} onClick={()=>setRetireMonth(i)}>
+                    <span className="bar-val num">{fmt(r.total)}</span>
+                    <div className="bar-rect" style={{height:`${h}%`}}/>
+                    <span className="bar-label">{SHORT_MONTHS[i]}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid-3" style={{marginTop:14}}>
+            <Stat label="Best month" value={MONTHS[calc.bestRow.monthIdx]} sub={`${fmt(calc.bestRow.total)}/mo lift`}/>
+            <Stat label="Selected month" value={MONTHS[retireMonth]} sub={`${Math.round(calc.selectedRow.colaRatio*100)}% first COLA · ${fmt(calc.selectedRow.total)}/mo`}/>
+            <Stat label="Cost of selection" value={calc.trapDelta<1?"$0":fmt(calc.trapDelta)+"/mo"} sub={calc.trapDelta<1?"optimal":`${fmt(calc.trapLifetime)} over ${calc.yearsRetired} yrs`} accent={calc.trapDelta>1}/>
+          </div>
+
+          <div style={{marginTop:24}}>
+            <h3 style={{fontSize:14,fontWeight:500,marginBottom:14,color:"var(--ink-2)"}}>Other date factors to consider</h3>
+            <div className="elig">
+              <EligCard title="Time In Grade (TIG) trap" status={system==="brs"||rank.startsWith("E")?"no":"warn"}
+                body={rank.startsWith("O")
+                  ?"Officers O-4 and above must serve 3 years Time In Grade to retire at grade (10 USC 1370). If recently promoted, retiring early drops you to the prior grade. Often $880+/mo for life."
+                  :"Not applicable for enlisted or warrant officers."}/>
+              <EligCard title="January 1 raise capture" status="warn"
+                body={`The ${jan1Raise}% annual pay raise hits Jan 1. Retiring Dec 31 misses it. Retiring Feb or later locks the higher High-3 (highest 36 months base pay average).`}/>
+              <EligCard title="Years of Service (YOS) quarter-year" status="yes"
+                body={`YOS rounds to the day post-2007. Each extra month adds ~0.21% to your multiplier, worth ~${fmt(calc.grossPension*0.0021)}/mo on your numbers.`}/>
+              <EligCard title="Benefits Delivery at Discharge (BDD) window" status="warn"
+                body="File VA claim 180-90 days pre-retirement (BDD program). Miss this window and you wait longer for your first VA check."/>
+            </div>
+          </div>
+
+          <LearnBlock title="Understanding the cost-of-living adjustment (COLA) trap">
+            <p>The Cost of Living Adjustment (COLA) is the annual inflation increase to your retired pay, applied January 1. If you retire mid-year, you don't get the full COLA on your first January. You get a partial credit based on your retirement month: January-March = 100%, April-June = 56%, July-September = 8%, October-December = 0%.</p>
+            <p>Most calculators stop there. But waiting later in the year adds Time In Service (TIS) credit to your pension multiplier. Each additional month adds ~0.21%. These two effects pull in opposite directions.</p>
+            <p>The optimal month balances both. For most members, <strong>March</strong> is the sweet spot: 100% COLA credit AND three months of additional TIS accrual over a January retirement.</p>
+            <p>This trap costs many retirees $50-150/month for life simply because they picked a date based on personal convenience without modeling the tradeoff. On a 35-year retirement, that's $20-60K of lost pension income.</p>
+          </LearnBlock>
+
+          <details style={{marginTop:18}}>
+            <summary>Adjust COLA assumption · currently {annualCOLA}%</summary>
+            <div className="details-body">
+              <div className="field">
+                <div className="field-label">
+                  <span>Annual COLA</span>
+                  <span className="field-value">{annualCOLA.toFixed(1)}%</span>
+                </div>
+                <input type="range" className="range-track" min={0} max={6} step={0.1} value={annualCOLA} onChange={e=>setAnnualCOLA(Number(e.target.value))}/>
+                <div className="field-help">2026 actual COLA was 2.8%. Long-run average ~2.5%. Higher COLA means a larger trap.</div>
+              </div>
+            </div>
+          </details>
+        </section>
+
+        {/* ===== COMPARE LOCATIONS ===== */}
+        <section id="compare" className="section">
+          <div className="section-h">
+            <h2 className="section-title">Compare locations</h2>
+            <div className="section-meta">US states + 20 expat destinations · COL-adjusted</div>
+          </div>
+          <p className="section-lede">
+            Same pension, four different places to live. Bars show monthly buying power: your net retired pay divided by local cost of living. Where you live can swing your effective retirement by 30-50% domestically, and much more abroad. <Conf level="low"/> indicates expat cost of living and tax treatment carry the most uncertainty.
+          </p>
+
+          <div className="surface" style={{marginBottom:18}}>
+            <div style={{fontSize:12,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10,fontWeight:500}}>Home location</div>
+            <LocationSelect value={homeLocation} onChange={setHomeLocation} exclude={compareLocations}/>
+            <div style={{fontSize:12,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",margin:"18px 0 10px",fontWeight:500}}>Compare against (pick up to 3)</div>
+            <MultiLocationPicker values={compareLocations} onChange={setCompareLocations} exclude={[homeLocation]}/>
+          </div>
+
+          <div className="shootout">
+            {[...calc.compareCalcs].sort((a,b)=>b.buyingPower-a.buyingPower).map(s=>{
+              const max=Math.max(...calc.compareCalcs.map(c=>c.buyingPower));
+              const leader=s.code===calc.bestLocation.code;
+              const isHome=s.code===homeLocation;
+              return(
+                <div key={s.code} className={`shoot-row ${leader?"leader":""}`}>
+                  <div className="shoot-state">
+                    {s.name}
+                    {s.isExpat&&<span style={{fontSize:10,padding:"2px 6px",background:"rgba(90,122,138,0.18)",borderRadius:99,color:"var(--info)",fontWeight:500}}>EXPAT</span>}
+                    {isHome&&<span style={{fontSize:10,padding:"2px 6px",background:"var(--surface-3)",borderRadius:99,color:"var(--ink-3)",fontWeight:500}}>HOME</span>}
+                    {leader&&!isHome&&<span style={{fontSize:10,padding:"2px 6px",background:"var(--accent-soft)",borderRadius:99,color:"var(--accent)",fontWeight:600}}>BEST</span>}
+                  </div>
+                  <div className="shoot-bar">
+                    <div className="shoot-bar-fill" style={{width:`${(s.buyingPower/max)*100}%`}}/>
+                  </div>
+                  <div className="shoot-val num">{fmt(s.buyingPower)}/mo</div>
+                  <div className="shoot-detail">
+                    <div>Net pay <b className="num">{fmt(s.netTotal)}</b></div>
+                    <div>COL index <b>{s.col}</b></div>
+                    <div>{s.isExpat?"US state tax":"Pension tax"} <b>{s.stateTaxNote}</b></div>
+                    {s.isExpat
+                      ?<div>Visa <b style={{fontSize:11}}>{s.loc.visa}</b></div>
+                      :<div>Prop tax exempt <b>{s.loc.vex==="100%"?(vaRating>=100?"100% rated":"100% only"):s.loc.vex==="part"?"partial":"none"}</b></div>}
+                    {s.isExpat
+                      ?<div>Treaty <b>{s.loc.tax==="treaty"?"protected":s.loc.tax==="limited"?"limited":s.loc.tax==="none"?"no treaty (PA exempts foreign)":""}</b></div>
+                      :<div>Prop tax <b className="num">{fmt(s.propTaxAnnual)}/yr</b></div>}
+                    <div>{s.isExpat?"Healthcare":"Sales tax"} <b>{s.isExpat?s.loc.health:s.loc.salesTax.toFixed(1)+"%"}</b></div>
+                  </div>
+                  {s.isExpat&&(
+                    <div style={{gridColumn:"1/-1",fontSize:11.5,color:"var(--ink-3)",lineHeight:1.5,marginTop:-4}}>
+                      {s.loc.note}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {calc.bestLocation.code!==homeLocation&&(
+            <div className="surface" style={{marginTop:18,borderColor:"var(--accent)"}}>
+              <div style={{fontSize:11,color:"var(--accent)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8,fontWeight:600}}>Relocation upside</div>
+              <div className="display" style={{fontSize:22,marginBottom:8}}>
+                {calc.bestLocation.isExpat?"Retiring to ":"Moving to "}<span className="text-accent">{calc.bestLocation.name}</span> adds <span className="num text-accent">{fmt(calc.bestLocation.buyingPower-calc.homeCalc.buyingPower)}</span>/mo of buying power.
+              </div>
+              <div className="text-dim" style={{fontSize:14}}>
+                Over {calc.yearsRetired} years: <b className="num text-accent">{fmt((calc.bestLocation.buyingPower-calc.homeCalc.buyingPower)*12*calc.yearsRetired)}</b>. Includes state/country tax treatment, cost of living, and TRICARE. Excludes moving costs, family proximity, climate preferences, healthcare quality differences, and risks specific to each destination.
+              </div>
+            </div>
+          )}
+
+          <LearnBlock title="US states vs living abroad: what changes">
+            <p>US military retirement is US-source income, taxed federally regardless of where you live. <strong>Federal tax does not change</strong> by moving abroad. State tax is the variable. Domicile abroad and you escape state tax (assuming you sever residency from your last state).</p>
+            <p>Cost of living matters more abroad. Your fixed pension goes much further in Portugal (~71 on the US-100 scale) than New York (~134). Healthcare changes: TRICARE Overseas Program is available in most countries (you pay upfront, file for reimbursement). Medicare does not pay outside the US.</p>
+            <p>Watch for: residency triggers (some states aggressively assert tax residency), foreign bank account reporting (FBAR/FATCA), retirement visa requirements, and treaty status. Most major countries have tax treaties protecting US government pensions from foreign taxation. The Philippines hosts the only foreign VA outpatient clinic.</p>
+            <p>VA disability is tax-free and portable worldwide. The Survivor Benefit Plan (SBP) is portable. Dependency and Indemnity Compensation (DIC) is portable.</p>
+          </LearnBlock>
+        </section>
+
+        {/* ===== WEALTH ===== */}
+        <section id="wealth" className="section">
+          <div className="section-h">
+            <h2 className="section-title">Wealth</h2>
+            <div className="section-meta">SBP and TSP decisions</div>
+          </div>
+          <p className="section-lede">
+            The Survivor Benefit Plan protects your spouse from losing the pension when you die. The Thrift Savings Plan is the wealth lever you control. Both intersect with the pension decision.
+          </p>
+
+          <div className="grid-2">
+            <div className="surface">
+              <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8,fontWeight:500}}>Survivor Benefit Plan (SBP)</div>
+              <div className="display" style={{fontSize:20,marginBottom:12}}>
+                {sbpOn
+                  ?<><span className="num">{fmt(calc.sbpPremium)}</span>/mo premium → <span className="num text-accent">{fmt(calc.sbpBase*0.55)}</span>/mo to survivor</>
+                  :"No SBP elected. Pension stops at your death."}
+              </div>
+              <div className="toggle-row">
+                <span>Elect SBP</span>
+                <button className={`toggle ${sbpOn?"on":""}`} onClick={()=>setSbpOn(!sbpOn)}/>
+              </div>
+              {sbpOn&&(
+                <div className="field">
+                  <div className="field-label">
+                    <span>Base amount</span>
+                    <span className="field-value">{sbpBasePct}% of pension</span>
+                  </div>
+                  <input type="range" className="range-track" min={10} max={100} step={5} value={sbpBasePct} onChange={e=>setSbpBasePct(Number(e.target.value))}/>
+                </div>
+              )}
+              <div className="surface-inset" style={{marginTop:14}}>
+                <div style={{fontSize:12,color:"var(--ink-3)"}}>2023 "widow's tax" elimination</div>
+                <div style={{fontSize:13,marginTop:4}}>The SBP-Dependency and Indemnity Compensation (DIC) offset is fully eliminated. If your spouse receives both after a service-connected death, they receive both in full.</div>
+              </div>
+            </div>
+
+            <div className="surface">
+              <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:8,fontWeight:500}}>Thrift Savings Plan (TSP)</div>
+              <div className="display" style={{fontSize:20,marginBottom:12}}>
+                {fmt(tspBalance)} today → <span className="num text-accent">{fmt(calc.tspFV)}</span> at age 67 <Conf level="low"/>
+              </div>
+              <div className="field">
+                <div className="field-label">
+                  <span>Current balance</span>
+                  <span className="field-value">{fmt(tspBalance)}</span>
+                </div>
+                <input type="range" className="range-track" min={0} max={2000000} step={10000} value={tspBalance} onChange={e=>setTspBalance(Number(e.target.value))}/>
+              </div>
+              <div className="field">
+                <div className="field-label">
+                  <span>Annual growth assumption</span>
+                  <span className="field-value">{tspGrowth.toFixed(1)}%</span>
+                </div>
+                <input type="range" className="range-track" min={0} max={200} step={0.5} value={tspGrowth} onChange={e=>setTspGrowth(Number(e.target.value))}/>
+                <div className="field-help">Cap raised to 200% to accommodate active strategy modeling. Long-run S&amp;P real return ~7%.</div>
+              </div>
+              <div className="surface-inset" style={{marginTop:14}}>
+                <div style={{fontSize:12,color:"var(--ink-3)"}}>4% safe withdrawal at age 67</div>
+                <div style={{fontSize:18,marginTop:4}} className="num">{fmt(calc.tspFV*0.04/12)}/mo additional income</div>
+              </div>
+            </div>
+          </div>
+
+          <LearnBlock title="When SBP makes sense, and when to skip it">
+            <p>The Survivor Benefit Plan (SBP) insures your military pension against your death. Premium: 6.5% of the base amount you elect. Survivor payment: 55% of that base, tax-free, for life. After 30 years (360 months) premiums stop forever (the "paid-up" rule).</p>
+            <p><strong>Elect SBP if:</strong> your spouse depends on the pension; term life insurance is unaffordable or unavailable due to health; you don't have $1.5M+ liquid to self-insure; your spouse is much younger and likely to outlive you significantly.</p>
+            <p><strong>Skip SBP if:</strong> your spouse has independent income equal to or greater than yours; you have a large enough nest egg that 55% of pension is not meaningful; you're certain you'll outlive your spouse (rare to be certain).</p>
+            <p><strong>Common mistake:</strong> electing partial coverage to save on premiums. The math rarely favors it. If you elect, go full base. You can decrease coverage later (one-time, between months 25-36 of retirement), but you cannot increase it. Decision is otherwise locked at retirement.</p>
+          </LearnBlock>
+
+          <LearnBlock title="Thrift Savings Plan: what changes at retirement">
+            <p>The Thrift Savings Plan (TSP) is the federal government's 401(k)-equivalent retirement account. Low fees, five core funds (G, F, C, S, I) plus Lifecycle (L) target-date funds.</p>
+            <p>At retirement: leave it (it keeps growing), withdraw monthly, take partial withdrawal, or transfer to an Individual Retirement Account (IRA). No Required Minimum Distribution (RMD) until age 73.</p>
+            <p>The "4% rule" is a rough safe-withdrawal heuristic: withdrawing 4% of your balance annually has historically lasted 30 years with high probability. For a $500K balance, that is $20K/year or $1,667/month.</p>
+            <p>For BRS members: the 5% match continues until separation. Maximize it. After separation, the match stops, but you can still contribute up to the annual limit ($23,500 in 2026 for under-50, plus $7,500 catch-up if 50+).</p>
+          </LearnBlock>
+
+          {/* ===== Social Security ===== */}
+          <div className="surface" style={{marginTop:24}}>
+            <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:8,gap:16,flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500}}>Social Security</div>
+                <div className="display" style={{fontSize:20,marginTop:4}}>
+                  Claim at <span className="text-accent">{ssClaimAge}</span> → <span className="num text-accent">{fmt(calc.ssMonthly)}</span>/mo
+                </div>
+                <div style={{fontSize:12,color:"var(--ink-3)",marginTop:4}}>
+                  {(SS_FACTORS[ssClaimAge]*100).toFixed(0)}% of your full retirement age benefit · starts {calc.yearsUntilSS} years after retirement
+                </div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500}}>Lifetime SS <Conf level="low"/></div>
+                <div className="num" style={{fontSize:22,fontWeight:500,marginTop:4}}>{fmt(calc.ssLifetime)}</div>
+                <div style={{fontSize:12,color:"var(--ink-3)"}}>{calc.ssYearsCollected.toFixed(0)} years collected to age {calc.totalLifespan}</div>
+              </div>
+            </div>
+
+            <div className="grid-2" style={{marginTop:18,gap:18}}>
+              <div className="field">
+                <div className="field-label">
+                  <span>Estimated benefit at full retirement age (age 67)</span>
+                  <span className="field-value num">{fmt(ssBenefitFRA)}/mo</span>
+                </div>
+                <input type="range" className="range-track" min={500} max={5000} step={50} value={ssBenefitFRA} onChange={e=>setSsBenefitFRA(Number(e.target.value))}/>
+                <div className="field-help">Find your real number at <span style={{color:"var(--ink-2)"}}>ssa.gov/myaccount</span>. Military service earns SS credits like any civilian employment.</div>
+              </div>
+              <div className="field">
+                <div className="field-label">
+                  <span>Claim age</span>
+                  <span className="field-value">Age {ssClaimAge}</span>
+                </div>
+                <input type="range" className="range-track" min={62} max={70} step={1} value={ssClaimAge} onChange={e=>setSsClaimAge(Number(e.target.value))}/>
+                <div className="field-help">62 = -30%. 67 = 100% (FRA). 70 = +24%. Each year matters.</div>
+              </div>
+            </div>
+
+            {/* Benefit by claim age bars */}
+            <div style={{marginTop:18}}>
+              <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500,marginBottom:10}}>Your benefit by claim age</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(9,1fr)",gap:4,alignItems:"end",height:120}}>
+                {[62,63,64,65,66,67,68,69,70].map(age=>{
+                  const m=ssBenefitFRA*SS_FACTORS[age];
+                  const max=ssBenefitFRA*SS_FACTORS[70];
+                  const h=(m/max)*100;
+                  const sel=age===ssClaimAge;
+                  return(
+                    <div key={age} className="bar" style={{cursor:"pointer"}} onClick={()=>setSsClaimAge(age)}>
+                      <span className="bar-val num" style={{opacity:sel?1:0.4}}>{fmt(m)}</span>
+                      <div className="bar-rect" style={{height:`${h}%`,minHeight:6,background:sel?"linear-gradient(180deg,var(--accent) 0%,rgba(199,154,58,0.4) 100%)":age===67?"linear-gradient(180deg,var(--pos) 0%,rgba(95,178,122,0.4) 100%)":"linear-gradient(180deg,var(--ink-4) 0%,#1c1c1c 100%)"}}/>
+                      <span className="bar-label" style={{color:sel?"var(--accent)":age===67?"var(--pos)":undefined}}>{age}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <LearnBlock title="When to claim Social Security: early, on time, or delayed">
+              <p>Social Security pays a base benefit at your Full Retirement Age (FRA) of 67 for those born 1960 or later. You can claim as early as 62 (with a permanent ~30% reduction) or delay to 70 (with a ~24% permanent increase). Every month matters: there is no "right answer," only tradeoffs.</p>
+              <p><strong>Claim early (62-66) if:</strong> you need the income now (no other reliable cash flow); you have a shortened life expectancy from health diagnosis; you have dependents who'd receive auxiliary benefits; you'd otherwise tap retirement accounts that have higher tax cost.</p>
+              <p><strong>Claim at FRA (67) if:</strong> you can comfortably bridge to 67 without it; you have average life expectancy; you want the simple choice with no surprises.</p>
+              <p><strong>Delay to 70 if:</strong> you have other income (pension, civilian salary, TSP) to bridge; you (or your spouse) have above-average life expectancy; you're married and the higher earner — your survivor will inherit the larger benefit; you want longevity insurance.</p>
+              <p><strong>The breakeven math:</strong> Claiming at 62 vs 67, you collect 5 extra years but at 70% of the rate. The crossover happens around age 80. If you live past 80, delaying wins. Past 85, delaying wins decisively. Below 78, claiming early wins.</p>
+              <p><strong>Military-specific:</strong> Unlike federal civilian retirees (who can face the Windfall Elimination Provision and Government Pension Offset), military retirement pay does NOT reduce your Social Security. You get both in full. WEP/GPO were also fully repealed in 2025 by the Social Security Fairness Act, so this is no longer a concern for anyone.</p>
+            </LearnBlock>
+          </div>
+
+          {system==="brs"&&(
+            <details style={{marginTop:14}}>
+              <summary>BRS lump sum option</summary>
+              <div className="details-body">
+                <div style={{fontSize:13,color:"var(--ink-2)",marginBottom:14}}>
+                  Take 25% or 50% of the present value of your pension as a lump sum at retirement, in exchange for reduced monthly pay until age 67. The DoD personal discount rate (~7% in 2026) makes the lump sum mathematically inferior for most members. Lump sum payout shown is for current selection.
+                </div>
+                <div className="grid-2">
+                  <div className="field">
+                    <div className="field-label"><span>Lump sum election</span></div>
+                    <div className="seg">
+                      {[["none","None"],["25","25%"],["50","50%"]].map(([k,l])=>(
+                        <button key={k} className={brsLump===k?"on":""} onClick={()=>setBrsLump(k)}>{l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <Stat label="Lump sum payout" value={fmt(calc.lumpSumPayout)} sub="paid at retirement"/>
+                </div>
+                <LearnBlock title="When the BRS lump sum makes sense">
+                  <p>You're effectively borrowing your own future pension at the discount rate (~7% in 2026). To "win," you need to invest the lump at higher returns AND outlive the breakeven.</p>
+                  <p><strong>Take the lump sum if:</strong> you have proven high-return uses (paying off 15%+ debt, business with clear cash flow); shortened life expectancy from serious diagnosis; you have specific known cash needs (down payment on retirement home).</p>
+                  <p><strong>Skip it if:</strong> you'd invest in standard 60/40 portfolios (you won't beat 7%); you have normal life expectancy; you'd be tempted to spend it on consumption.</p>
+                </LearnBlock>
+              </div>
+            </details>
+          )}
+        </section>
+
+        {/* ===== TRANSITION ===== */}
+        <section id="transition" className="section">
+          <div className="section-h">
+            <h2 className="section-title">Transition</h2>
+            <div className="section-meta">First 12 months · cash runway</div>
+          </div>
+          <p className="section-lede">
+            Active duty pay stops the day you retire. First pension check arrives weeks later. SkillBridge, terminal leave, TRICARE flip, and civilian start date all interact.
+          </p>
+
+          <div className="grid-2">
+            <div className="surface">
+              <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:14,fontWeight:500}}>Levers</div>
+              <RangeField label="Terminal leave (days)" value={terminalDays} setter={setTerminalDays} min={0} max={60}/>
+              <RangeField label="SkillBridge participation (months)" value={skillBridgeMo} setter={setSkillBridgeMo} min={0} max={6}/>
+              <RangeField label="First pension check (day after retirement)" value={pensionLagDays} setter={setPensionLagDays} min={20} max={90}/>
+              <div className="field">
+                <div className="field-label">
+                  <span>Civilian salary target (annual)</span>
+                  <span className="field-value num">{fmt(civilianSalary)}</span>
+                </div>
+                <input type="range" className="range-track" min={0} max={500000} step={5000} value={civilianSalary} onChange={e=>setCivilianSalary(Number(e.target.value))}/>
+                <div className="field-help">Used to compute total household income and federal tax bracket.</div>
+              </div>
+
+              {/* Civilian salary equivalency callout */}
+              <div className="surface-inset" style={{marginTop:14,borderColor:calc.civilianGapStatus==="matches"?"var(--pos)":"var(--accent)"}}>
+                <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500,marginBottom:6}}>To match active duty takehome <Conf level="medium"/></div>
+                <div className="display" style={{fontSize:22}}>
+                  Target: <span className="num text-accent">{fmt(calc.targetCivilianAnnual)}</span>/yr
+                </div>
+                <div style={{fontSize:12.5,color:"var(--ink-2)",marginTop:6,lineHeight:1.5}}>
+                  Your active duty takehome is ~<b className="num" style={{color:"var(--ink)"}}>{fmt(calc.adMonthlyTakehome)}/mo</b> (base pay {fmt(calc.adBaseTakehome)} after federal tax, plus BAH {fmt(lostBAH)} and BAS {fmt(calc.basMonthly)}, both tax-free).
+                  Your retirement net is <b className="num" style={{color:"var(--ink)"}}>{fmt(calc.homeCalc.netTotal)}/mo</b>, leaving a <b className="num" style={{color:"var(--ink)"}}>{fmt(calc.monthlyGapVsAD)}/mo</b> gap.
+                  At your effective federal rate, you need <b className="num text-accent">{fmt(calc.targetCivilianAnnual)}/yr</b> civilian gross to break even.
+                  {calc.civilianGapStatus==="matches"
+                    ?<><br/><span className="text-pos">Your target salary of {fmt(civilianSalary)} clears the bar. You'll net more than active duty.</span></>
+                    :<><br/><span className="text-accent">Your target of {fmt(civilianSalary)} is {fmt(calc.targetCivilianAnnual-civilianSalary)} short of active duty parity.</span></>}
+                </div>
+              </div>
+            </div>
+            <div className="surface">
+              <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:14,fontWeight:500}}>Outcomes</div>
+              <RunwayChart calc={calc} terminalDays={terminalDays} skillBridgeMo={skillBridgeMo} pensionLagDays={pensionLagDays} civilianSalary={civilianSalary}/>
+              <div className="grid-2" style={{marginTop:18,gap:12}}>
+                <Stat label="Terminal leave payout" value={fmt(calc.terminalLeavePay)} sub={`${terminalDays} days × ${fmt(calc.terminalLeavePay/Math.max(1,terminalDays))}/day`}/>
+                <Stat label="Steady-state household" value={`${fmt(calc.householdRunway)}/mo`} sub="civilian + pension"/>
+              </div>
+            </div>
+          </div>
+
+          <LearnBlock title="The BAH cliff and the income gap most people miss">
+            <p>Basic Allowance for Housing (BAH) stops the day you retire. For senior members in high-cost duty stations, this is a $3,000-5,000/month cliff. Civilian salaries are taxed; BAH was not. So a $100K civilian salary doesn't replace $7K base pay + $4K BAH.</p>
+            <p>Quick math: take your monthly active duty compensation (base pay + BAH + BAS - Basic Allowance for Subsistence), divide by ~0.78 (rough adjustment for now-taxable income), and that's the civilian salary equivalent you need to maintain the same takehome.</p>
+            <p>SkillBridge bridges this gap by letting you intern with a civilian employer for up to 180 days while still drawing active duty pay. If you can secure a SkillBridge slot that leads to a direct hire, the transition cliff disappears.</p>
+            <p>Terminal leave can be sold back (up to 60 days in a career, one-time cash payment) OR burned (extends your retirement date, you stay on AD pay through the leave period). Burning gives you more total compensation; selling gives you immediate cash.</p>
+          </LearnBlock>
+        </section>
+
+        {/* ===== VERIFY ===== */}
+        <section id="verify" className="section">
+          <div className="section-h">
+            <h2 className="section-title">Verify</h2>
+            <div className="section-meta">Auto-computed where data exists · all editable</div>
+          </div>
+          <p className="section-lede">
+            Federal tax now derives from your actual income against 2026 brackets. Years in retirement derive from life expectancy on your age and gender. Every assumption is editable below.
+          </p>
+
+          <div className="surface" style={{marginBottom:18}}>
+            <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:14,fontWeight:500}}>Auto-computed assumptions</div>
+            <div className="grid-3">
+              <Stat label="Federal effective tax rate" value={`${(calc.effectiveFedRate*100).toFixed(1)}%`}
+                sub={fedTaxOverride!==null?"manual override":`on ${fmt(calc.totalTaxableIncome)} taxable income · ${filingStatus==="mfj"?"married filing jointly":"single"}`}
+                accent/>
+              <Stat label="Expected years in retirement" value={`${calc.yearsRetired}`}
+                sub={`life expectancy ${calc.totalLifespan} · ${gender==="M"?"male":"female"} at retirement age ${retireAge}`}
+                accent/>
+              <Stat label="Federal tax this year" value={fmt(calc.autoFedTax)}
+                sub={`after $${FED_STD_DEDUCTION_2026[filingStatus].toLocaleString()} standard deduction`}/>
+            </div>
+            <LearnBlock title="How the federal tax rate is computed">
+              <p>Your taxable income = annual taxable pension (gross pension minus VA waiver minus SBP premium, times 12) + civilian salary. VA disability compensation is excluded because it is tax-free at the federal level.</p>
+              <p>We apply the 2026 standard deduction (${FED_STD_DEDUCTION_2026[filingStatus].toLocaleString()} for {filingStatus==="mfj"?"married filing jointly":"single"}) then walk the 2026 progressive brackets (10% → 12% → 22% → 24% → 32% → 35% → 37%). The effective rate is total federal tax divided by total taxable income.</p>
+              <p>This is more accurate than picking a single bracket rate. It does NOT include: itemized deductions, qualified business income deduction, retirement contributions, state tax deductions, capital gains, Social Security taxation, or Additional Medicare Tax. For complex situations, override below and use your tax professional's effective rate.</p>
+            </LearnBlock>
+          </div>
+
+          <div className="grid-2">
+            <div className="surface-inset">
+              <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:6}}>
+                <span style={{fontSize:12,color:"var(--ink-2)",fontWeight:500}}>Filing status</span>
+              </div>
+              <div className="seg" style={{marginTop:8}}>
+                {[["single","Single"],["mfj","Married Filing Jointly"]].map(([k,l])=>(
+                  <button key={k} className={filingStatus===k?"on":""} onClick={()=>setFilingStatus(k)}>{l}</button>
+                ))}
+              </div>
+            </div>
+            <div className="surface-inset">
+              <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:6}}>
+                <span style={{fontSize:12,color:"var(--ink-2)",fontWeight:500}}>Gender (for life expectancy)</span>
+              </div>
+              <div className="seg" style={{marginTop:8}}>
+                {[["M","Male"],["F","Female"]].map(([k,l])=>(
+                  <button key={k} className={gender===k?"on":""} onClick={()=>setGender(k)}>{l}</button>
+                ))}
+              </div>
+            </div>
+            <AssumpField label="Annual COLA" suffix="%" value={annualCOLA} setter={setAnnualCOLA} min={0} max={6} step={0.1} note="2026 actual: 2.8%. Long-run average ~2.5%."/>
+            <AssumpField label="Annual military pay raise" suffix="%" value={jan1Raise} setter={setJan1Raise} min={1} max={6} step={0.1} note="2026 raise: 3.8%. Used for Jan 1 raise capture indicator."/>
+            <AssumpField label="BRS personal discount rate" suffix="%" value={discountRate} setter={setDiscountRate} min={3} max={12} step={0.1} note="2026 DoD-set rate ~7%. Only relevant for BRS lump sum election."/>
+            <AssumpField label="TSP annual growth" suffix="%" value={tspGrowth} setter={setTspGrowth} min={0} max={200} step={0.5} note="Cap raised to 200% for active-strategy modeling. Long-run S&P real return ~7%."/>
+          </div>
+
+          <details style={{marginTop:18}}>
+            <summary>Override federal tax rate manually (advanced)</summary>
+            <div className="details-body">
+              <div className="field">
+                <div className="field-label">
+                  <span>Manual override</span>
+                  <span className="field-value">{fedTaxOverride===null?"auto":fedTaxOverride+"%"}</span>
+                </div>
+                <input type="range" className="range-track" min={0} max={37} step={0.5} value={fedTaxOverride??Math.round(calc.autoEffectiveRate*100)} onChange={e=>setFedTaxOverride(Number(e.target.value))}/>
+                <button className="btn" style={{fontSize:11.5,padding:"6px 10px",marginTop:6}} onClick={()=>setFedTaxOverride(null)}>Reset to auto-compute</button>
+                <div className="field-help">Use this if you have unusual deductions, are not a US tax resident, or your tax pro gave you a different effective rate.</div>
+              </div>
+            </div>
+          </details>
+
+          <details style={{marginTop:12}}>
+            <summary>Birth year + life expectancy detail</summary>
+            <div className="details-body">
+              <NumField label="Birth year" value={birthYear} setter={setBirthYear} min={1940} max={2010}/>
+              <div style={{fontSize:13,color:"var(--ink-2)",marginTop:8}}>
+                You retire at age {retireAge} (set in inputs drawer). Life expectancy at age {retireAge} for {gender==="M"?"males":"females"}: ~{calc.totalLifespan} years. Years in retirement: <b className="num">{calc.yearsRetired}</b>.
+              </div>
+              <LearnBlock title="About the life expectancy model">
+                <p>Estimates use simplified period life tables from the US Social Security Administration (2024 data). Average life expectancy at age 45 is approximately 80 years for males and 84 for females. These are population averages; military retirees tend to live slightly longer due to selection effects (you survived 20+ years of service).</p>
+                <p>For planning, consider modeling to your 90th percentile lifespan, not your average. The risk in retirement planning is outliving your money, not dying with extra. A 45-year-old male's 90th percentile lifespan is closer to 92 than 80.</p>
+              </LearnBlock>
+            </div>
+          </details>
+
+          <details style={{marginTop:12}}>
+            <summary>Full decomposition</summary>
+            <div className="details-body">
+              <FullDecomp calc={calc}/>
+            </div>
+          </details>
+
+          <details style={{marginTop:12}}>
+            <summary>System comparison · same career, different retirement system</summary>
+            <div className="details-body">
+              <div className="grid-4">
+                {["high3","brs","finalpay","redux"].map(s=>{
+                  const m=pensionMultiplier(s,years);
+                  const monthly=highThree*m;
+                  const labels={high3:"High-3",brs:"BRS",finalpay:"Final Pay",redux:"REDUX"};
+                  return(
+                    <div key={s} className="surface-inset" style={{borderColor:s===system?"var(--accent)":undefined}}>
+                      <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500}}>{labels[s]}</div>
+                      <div className="num" style={{fontSize:22,marginTop:6}}>{fmt(monthly)}</div>
+                      <div className="text-dim" style={{fontSize:12,marginTop:2}}>{(m*100).toFixed(1)}% mult</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </details>
+
+          <details style={{marginTop:12}}>
+            <summary>BAH gap + TRICARE</summary>
+            <div className="details-body">
+              <div className="grid-2">
+                <div className="field">
+                  <div className="field-label">
+                    <span>BAH you'll lose at retirement</span>
+                    <span className="field-value num">{fmt(lostBAH)}/mo</span>
+                  </div>
+                  <input type="range" className="range-track" min={0} max={6000} step={100} value={lostBAH} onChange={e=>setLostBAH(Number(e.target.value))}/>
+                  <div className="field-help">National average for {rank}. Adjust to your duty station's BAH rate.</div>
+                </div>
+                <div className="field">
+                  <div className="field-label"><span>TRICARE plan</span></div>
+                  <select className="ctrl" value={tricarePlan} onChange={e=>setTricarePlan(e.target.value)}>
+                    <option value="prime_indiv">Prime · Individual (~${TRICARE.prime_indiv}/mo)</option>
+                    <option value="prime_family">Prime · Family (~${TRICARE.prime_family}/mo)</option>
+                    <option value="select_indiv">Select · Individual (~${TRICARE.select_indiv}/mo)</option>
+                    <option value="select_family">Select · Family (~${TRICARE.select_family}/mo)</option>
+                    <option value="overseas_family">Overseas · Family (~${TRICARE.overseas_family}/mo)</option>
+                  </select>
+                </div>
+              </div>
+              <LearnBlock title="TRICARE for retirees: Prime, Select, and abroad">
+                <p>As a retiree, you choose between TRICARE Prime (HMO-style: low out of pocket, network providers, requires primary care manager referrals) and TRICARE Select (PPO-style: more flexibility, higher copays, no referrals). Both have annual enrollment fees, deducted monthly from retired pay.</p>
+                <p>At age 65, TRICARE for Life kicks in as a wraparound to Medicare. No TFL premium, but you must enroll in Medicare Part B (currently ~$185/month).</p>
+                <p>Abroad: TRICARE Overseas Program covers most countries. You pay providers upfront and file for reimbursement. Network providers exist in major cities. Not covered: Cuba, Iran, North Korea, Sudan, Syria.</p>
+                <p>For most healthy retirees in the US: TRICARE Select Family at ~$40/month plus copays is excellent insurance for a fraction of civilian premiums. Compare to a civilian family plan at $1,500-2,500/month.</p>
+              </LearnBlock>
+            </div>
+          </details>
+        </section>
+
+        <footer className="footer">
+          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.2 · A planning instrument for service members.</div>
+          Official retirement pay is determined by Defense Finance and Accounting Service (DFAS) based on your actual record. VA rates reflect 2026 (2.8% Cost of Living Adjustment, effective Dec 1 2025). Federal tax brackets per IRS Rev. Proc. 2025-32. State cost of living indices rebased from C2ER 2025. Expat cost of living from Numbeo 2026. Tax treaty status is general; consult a tax professional for your specific situation. Property tax effective rates from Tax Foundation 2025. CRDP/CRSC, REDUX age-62 catch-up, and BRS lump sum are simplified models. Built in conversation with Claude. Verify with your retirement services office and a tax professional before locking in a date.
+        </footer>
+      </div>
+
+      {!drawerOpen&&(
+        <button className="drawer-fab" onClick={()=>setDrawerOpen(true)}>
+          <Icon.settings/>Inputs
+        </button>
+      )}
+      <div className={`drawer-backdrop ${drawerOpen?"open":""}`} onClick={()=>setDrawerOpen(false)}/>
+      <div className={`drawer ${drawerOpen?"open":""}`}>
+        <div className="drawer-head">
+          <div style={{fontSize:14,fontWeight:500}}>Refine your scenario</div>
+          <button className="btn" style={{padding:8}} onClick={()=>setDrawerOpen(false)}><Icon.close/></button>
+        </div>
+        <div className="drawer-body">
+          <div className="drawer-section">
+            <h4>Essential</h4>
+            <SelectField label="Rank" value={rank} setter={setRank} options={Object.keys(PAY_TABLE).map(r=>({v:r,l:r}))}/>
+            <SegField label="Retirement system" value={system} setter={setSystem} options={[["high3","High-3"],["brs","BRS"],["redux","REDUX"],["finalpay","Final"]]}/>
+            <NumField label="Years of service" value={years} setter={setYears} min={20} max={40} range/>
+            <SelectField label="Retirement month" value={retireMonth} setter={v=>setRetireMonth(Number(v))} options={MONTHS.map((m,i)=>({v:i,l:m}))}/>
+            <NumField label="Age at retirement" value={retireAge} setter={setRetireAge} min={37} max={62}/>
+            <NumField label={highThreeOverride?"High-3 monthly (manual)":"High-3 monthly (auto)"} value={highThree} setter={v=>{setHighThreeOverride(true);setHighThree(v)}} prefix="$" min={2000} max={25000} step={50} range/>
+            {highThreeOverride&&(
+              <button className="btn" style={{fontSize:11.5,padding:"6px 10px",marginTop:-6}} onClick={()=>setHighThreeOverride(false)}>Reset to auto</button>
+            )}
+          </div>
+
+          <div className="drawer-section">
+            <h4>VA Disability</h4>
+            <SelectField label="Combined rating" value={vaRating} setter={v=>setVaRating(Number(v))} options={[0,10,20,30,40,50,60,70,80,90,100].map(r=>({v:r,l:r+"%"}))}/>
+            <ToggleField label="Spouse" value={hasSpouse} setter={setHasSpouse}/>
+            <NumField label="Children under 18" value={kids} setter={setKids} min={0} max={6}/>
+            <ToggleField label="Combat-related (CRSC eligible)" value={combatRelated} setter={setCombatRelated}/>
+          </div>
+
+          <div className="drawer-section">
+            <h4>Where you'll live (home)</h4>
+            <SelectField label="Home location" value={homeLocation} setter={setHomeLocation}
+              options={[
+                {v:"__sep1",l:"— US States —",disabled:true},
+                ...Object.entries(STATES).sort((a,b)=>a[1].n.localeCompare(b[1].n)).map(([k,v])=>({v:k,l:v.n})),
+                {v:"__sep2",l:"— Expat destinations —",disabled:true},
+                ...Object.entries(EXPATS).sort((a,b)=>a[1].n.localeCompare(b[1].n)).map(([k,v])=>({v:k,l:v.n})),
+              ]}/>
+          </div>
+
+          <div className="drawer-section">
+            <h4>Tax & life</h4>
+            <SegField label="Filing status" value={filingStatus} setter={setFilingStatus} options={[["single","Single"],["mfj","Married Filing Jointly"]]}/>
+            <NumField label="Birth year" value={birthYear} setter={setBirthYear} min={1940} max={2010}/>
+            <SegField label="Gender (life expectancy)" value={gender} setter={setGender} options={[["M","Male"],["F","Female"]]}/>
+          </div>
+
+          <div className="drawer-section">
+            <h4>Power options</h4>
+            <div className="field">
+              <div className="field-label"><span>DIEMS (YYYYMMDD)</span></div>
+              <input type="text" className="ctrl" placeholder="20030815" value={diems} onChange={e=>setDiems(e.target.value)}/>
+              <div className="field-help">Date of Initial Entry to Military Service. Auto-detects your retirement system. Override above if needed.</div>
+            </div>
+            {system==="brs"&&(
+              <SegField label="BRS lump sum" value={brsLump} setter={setBrsLump} options={[["none","None"],["25","25%"],["50","50%"]]}/>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   SUBCOMPONENTS
+   ========================================================================= */
+function Topbar(){
+  return(
+    <div className="topbar">
+      <div className="page topbar-inner">
+        <div className="brand">
+          <span className="brand-mark"><Icon.star/></span>
+          <span className="brand-name">Military Pension Studio</span>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.2</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({label,value,sub,accent}){
+  return(
+    <div className="surface-inset">
+      <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500}}>{label}</div>
+      <div className={`num ${accent?"text-accent":""}`} style={{fontSize:22,letterSpacing:"-0.02em",marginTop:6,fontWeight:500}}>{value}</div>
+      {sub&&<div style={{fontSize:12,color:"var(--ink-3)",marginTop:4}}>{sub}</div>}
+    </div>
+  );
+}
+
+function EligCard({title,body,status}){
+  return(
+    <div className="elig-card">
+      <div className="elig-head">
+        <div className="elig-title">{title}</div>
+        <span className={`elig-status ${status}`}>{status==="yes"?"Yes":status==="no"?"No":status==="warn"?"Check":"NA"}</span>
+      </div>
+      <div className="elig-body">{body}</div>
+    </div>
+  );
+}
+
+function LearnBlock({title,children}){
+  return(
+    <details className="learn">
+      <summary>Learn · {title}</summary>
+      <div className="learn-body">{children}</div>
+    </details>
+  );
+}
+
+function Conf({level}){
+  const labels={high:"High",medium:"Med",low:"Low"};
+  return <span className={`conf ${level}`} title={`${labels[level]} confidence`}>{labels[level]}</span>;
+}
+
+function Decomposition({calc}){
+  // Note: netPension already excludes VA. We show "Pension takehome" as the pension net component,
+  // then VA + CRSC as separate tax-free additions. Together they sum to netTotal. Deductions show
+  // what was subtracted from the gross to get there.
+  const items=[
+    {label:"Pension takehome",value:calc.homeCalc.netPension,color:"#5a7a8a"},
+    {label:"VA disability (tax-free)",value:calc.va,color:"#5fb27a"},
+    ...(calc.crscRestore>0?[{label:"CRSC (tax-free)",value:calc.crscRestore,color:"#7a9b88"}]:[]),
+    {label:"Federal tax",value:calc.homeCalc.monthlyFedTaxPension,color:"#3a3a36"},
+    {label:"State tax",value:calc.homeCalc.monthlyStateTaxPension,color:"#4a4a44"},
+    {label:"SBP premium",value:calc.sbpPremium,color:"#2a2a26"},
+    {label:"TRICARE premium",value:calc.tricareMonthly,color:"#36363a"},
+    {label:"VA waiver",value:calc.waiverAmount,color:"#1f1f1f"},
+  ].filter(i=>i.value>0);
+  const total=items.reduce((s,i)=>s+i.value,0);
+  return(
+    <div>
+      <div className="stack">
+        {items.map((i,idx)=>(
+          <div key={idx} className="stack-seg" style={{flex:i.value/total,background:i.color}} title={`${i.label}: ${fmt(i.value)}`}/>
+        ))}
+      </div>
+      <div className="stack-key">
+        {items.map((i,idx)=>(
+          <div key={idx} className="stack-key-item">
+            <span className="stack-key-swatch" style={{background:i.color}}/>
+            <span>{i.label}</span>
+            <span className="stack-key-val num">{fmt(i.value)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LocationSelect({value,onChange,exclude=[]}){
+  return(
+    <select className="ctrl" value={value} onChange={e=>onChange(e.target.value)} style={{maxWidth:340}}>
+      <optgroup label="US States">
+        {Object.entries(STATES).sort((a,b)=>a[1].n.localeCompare(b[1].n)).map(([k,v])=>(
+          <option key={k} value={k} disabled={exclude.includes(k)}>{v.n}{exclude.includes(k)?" (in compare)":""}</option>
+        ))}
+      </optgroup>
+      <optgroup label="Expat destinations">
+        {Object.entries(EXPATS).sort((a,b)=>a[1].n.localeCompare(b[1].n)).map(([k,v])=>(
+          <option key={k} value={k} disabled={exclude.includes(k)}>{v.n}{exclude.includes(k)?" (in compare)":""}</option>
+        ))}
+      </optgroup>
+    </select>
+  );
+}
+
+function MultiLocationPicker({values,onChange,exclude=[]}){
+  const toggle=k=>{
+    if(values.includes(k))onChange(values.filter(v=>v!==k));
+    else if(values.length<3)onChange([...values,k]);
+  };
+  const POPULAR_STATES=["TX","FL","TN","NV","SD","WA","NC","SC","AZ","CO","NH","WY"];
+  const POPULAR_EXPATS=["PRT","MEX","PAN","PHL","THA","CRI","ESP","COL","ECU"];
+  return(
+    <div>
+      <div style={{fontSize:11,color:"var(--ink-3)",marginBottom:6}}>Popular US states</div>
+      <div className="pill-group">
+        {POPULAR_STATES.filter(p=>!exclude.includes(p)).map(k=>(
+          <button key={k} className={`pill ${values.includes(k)?"active":""}`} onClick={()=>toggle(k)}>
+            {STATES[k].n}
+          </button>
+        ))}
+      </div>
+      <div style={{fontSize:11,color:"var(--ink-3)",marginTop:12,marginBottom:6}}>Popular expat destinations</div>
+      <div className="pill-group">
+        {POPULAR_EXPATS.filter(p=>!exclude.includes(p)).map(k=>(
+          <button key={k} className={`pill expat ${values.includes(k)?"active":""}`} onClick={()=>toggle(k)}>
+            {EXPATS[k].n}
+          </button>
+        ))}
+      </div>
+      <div style={{marginTop:12,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+        <span style={{fontSize:12,color:"var(--ink-3)"}}>Other:</span>
+        <select className="ctrl" style={{maxWidth:220}} value="" onChange={e=>{if(e.target.value)toggle(e.target.value)}}>
+          <option value="">Pick any location...</option>
+          <optgroup label="US States">
+            {Object.entries(STATES).sort((a,b)=>a[1].n.localeCompare(b[1].n)).filter(([k])=>!exclude.includes(k)&&!values.includes(k)).map(([k,v])=>(
+              <option key={k} value={k}>{v.n}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Expat destinations">
+            {Object.entries(EXPATS).sort((a,b)=>a[1].n.localeCompare(b[1].n)).filter(([k])=>!exclude.includes(k)&&!values.includes(k)).map(([k,v])=>(
+              <option key={k} value={k}>{v.n}</option>
+            ))}
+          </optgroup>
+        </select>
+        <span style={{fontSize:11.5,color:"var(--ink-3)"}}>{values.length}/3</span>
+      </div>
+    </div>
+  );
+}
+
+function RangeField({label,value,setter,min,max,step=1}){
+  return(
+    <div className="field">
+      <div className="field-label">
+        <span>{label}</span>
+        <span className="field-value num">{value}</span>
+      </div>
+      <input type="range" className="range-track" min={min} max={max} step={step} value={value} onChange={e=>setter(Number(e.target.value))}/>
+    </div>
+  );
+}
+
+function NumField({label,value,setter,prefix,min,max,step=1,range}){
+  return(
+    <div className="field">
+      <div className="field-label"><span>{label}</span></div>
+      {prefix
+        ?<div className="ctrl-prefix-wrap"><span>{prefix}</span><input type="number" value={value} min={min} max={max} step={step} onChange={e=>setter(Number(e.target.value))}/></div>
+        :<input type="number" className="ctrl" value={value} min={min} max={max} step={step} onChange={e=>setter(Number(e.target.value))}/>}
+      {range&&<input type="range" className="range-track" min={min} max={max} step={step} value={value} onChange={e=>setter(Number(e.target.value))}/>}
+    </div>
+  );
+}
+
+function SelectField({label,value,setter,options}){
+  return(
+    <div className="field">
+      <div className="field-label"><span>{label}</span></div>
+      <select className="ctrl" value={value} onChange={e=>setter(e.target.value)}>
+        {options.map(o=><option key={o.v} value={o.v} disabled={o.disabled}>{o.l}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function SegField({label,value,setter,options}){
+  return(
+    <div className="field">
+      <div className="field-label"><span>{label}</span></div>
+      <div className="seg">
+        {options.map(([k,l])=>(
+          <button key={k} className={String(value)===String(k)?"on":""} onClick={()=>setter(k)}>{l}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ToggleField({label,value,setter}){
+  return(
+    <div className="toggle-row">
+      <span>{label}</span>
+      <button className={`toggle ${value?"on":""}`} onClick={()=>setter(!value)}/>
+    </div>
+  );
+}
+
+function AssumpField({label,value,setter,suffix,min,max,step,note}){
+  return(
+    <div className="surface-inset">
+      <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:6}}>
+        <span style={{fontSize:12,color:"var(--ink-2)",fontWeight:500}}>{label}</span>
+        <span className="num text-accent" style={{fontSize:18,fontWeight:500}}>{value.toFixed(suffix==="%"?1:0)}{suffix}</span>
+      </div>
+      <input type="range" className="range-track" min={min} max={max} step={step} value={value} onChange={e=>setter(Number(e.target.value))}/>
+      <div style={{fontSize:11.5,color:"var(--ink-3)",marginTop:8,lineHeight:1.4}}>{note}</div>
+    </div>
+  );
+}
+
+function FullDecomp({calc}){
+  const rows=[
+    ["Gross pension",calc.grossPension,`${(calc.mult*100).toFixed(1)}% multiplier × ${fmt(calc.grossPension/calc.mult)} High-3`],
+    ...(calc.lumpSumPayout>0?[["BRS lump sum (one-time)",calc.lumpSumPayout,"paid at retirement"]]:[]),
+    ["VA waiver",-calc.waiverAmount,calc.eligibleCRDP?"CRDP restored":"no concurrent receipt"],
+    ["SBP premium",-calc.sbpPremium,"6.5% of base elected"],
+    ["TRICARE premium",-calc.tricareMonthly,"deducted from retired pay"],
+    [`Federal tax`,-calc.homeCalc.monthlyFedTaxPension,`auto · ${(calc.effectiveFedRate*100).toFixed(1)}% effective rate`],
+    [`State tax (${calc.homeCalc.name})`,-calc.homeCalc.monthlyStateTaxPension,calc.homeCalc.stateTaxNote],
+    ["VA disability (tax-free)",calc.va,"added back"],
+    ...(calc.crscRestore>0?[["CRSC restoration (tax-free)",calc.crscRestore,"combat-related"]]:[]),
+  ];
+  return(
+    <div>
+      {rows.map(([label,value,note],i)=>(
+        <div key={i} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0",borderBottom:i<rows.length-1?"1px solid var(--line)":""}}>
+          <div>
+            <div style={{fontSize:14}}>{label}</div>
+            <div style={{fontSize:11.5,color:"var(--ink-3)"}}>{note}</div>
+          </div>
+          <div className="num" style={{fontSize:15,fontWeight:500,color:value<0?"var(--ink-2)":"var(--ink)"}}>
+            {value<0?"−":""}{fmt(Math.abs(value))}
+          </div>
+        </div>
+      ))}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 0 0",marginTop:4,borderTop:"1px solid var(--line-2)"}}>
+        <div style={{fontWeight:500}}>Net monthly total</div>
+        <div className="num text-accent" style={{fontSize:22,fontWeight:500}}>{fmt(calc.homeCalc.netTotal)}</div>
+      </div>
+    </div>
+  );
+}
+
+function RunwayChart({calc,terminalDays,skillBridgeMo,pensionLagDays,civilianSalary}){
+  const civilianMonthly=civilianSalary/12;
+  const pensionStart=Math.ceil(pensionLagDays/30);
+  const months=Array.from({length:12},(_,i)=>{
+    const m=i+1;
+    return{
+      m,
+      pension:m>=pensionStart?calc.homeCalc.netTotal:0,
+      civilian:m>skillBridgeMo?civilianMonthly:0,
+      terminal:m===1?calc.terminalLeavePay:0,
+      skillbridge:m<=skillBridgeMo?calc.grossPension:0,
+    };
+  });
+  months.forEach(x=>x.total=x.pension+x.civilian+x.terminal+x.skillbridge);
+  const max=Math.max(...months.map(m=>m.total),1);
+  return(
+    <div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(12,1fr)",gap:4,alignItems:"end",height:140}}>
+        {months.map(m=>(
+          <div key={m.m} style={{display:"flex",flexDirection:"column",justifyContent:"flex-end",height:"100%"}}>
+            <div style={{display:"flex",flexDirection:"column-reverse",borderRadius:"4px 4px 0 0",overflow:"hidden",height:`${(m.total/max)*100}%`,minHeight:4}}>
+              <div style={{height:`${(m.skillbridge/m.total)*100}%`,background:"var(--accent)"}}/>
+              <div style={{height:`${(m.civilian/m.total)*100}%`,background:"var(--pos)"}}/>
+              <div style={{height:`${(m.pension/m.total)*100}%`,background:"#5a7a8a"}}/>
+              <div style={{height:`${(m.terminal/m.total)*100}%`,background:"#c0c0c0"}}/>
+            </div>
+            <div style={{fontSize:9.5,color:"var(--ink-3)",marginTop:4,textAlign:"center"}}>{m.m}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:12,marginTop:14,fontSize:11.5,color:"var(--ink-2)"}}>
+        <Leg color="var(--accent)" l="SkillBridge"/>
+        <Leg color="#c0c0c0" l="Terminal leave"/>
+        <Leg color="#5a7a8a" l="Pension"/>
+        <Leg color="var(--pos)" l="Civilian"/>
+      </div>
+    </div>
+  );
+}
+function Leg({color,l}){return<div style={{display:"flex",alignItems:"center",gap:6}}><span style={{width:10,height:10,background:color,borderRadius:2}}/>{l}</div>;}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
