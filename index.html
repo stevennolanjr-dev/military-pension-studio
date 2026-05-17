@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Military Pension Studio v3.8 · A retirement instrument for service members</title>
+<title>Military Pension Studio v3.9 · A retirement instrument for service members</title>
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -506,7 +506,7 @@ const FED_STD_DEDUCTION_2026 = {single:16100, mfj:32200};
 
 // US States: tax treatment + COL index + property tax + disabled vet exemption + sales tax
 // COL index baseline: US average = 100 (rebased from C2ER 2025)
-// US States with extended detail. New v3.8 fields:
+// US States with extended detail. New v3.9 fields:
 // healthIdx: US News & World Report 2024-25 state health ranking, approx 0-100 (higher better)
 // crimeIdx: FBI UCR 2024 derived approx 0-100 (lower better)
 // anchor: representative city for cost-of-living and climate
@@ -566,7 +566,7 @@ const STATES = {
   WY:{n:"Wyoming",      tax:"none", col:91, prop:0.58,vex:"part",salesTax:5.44,healthIdx:68,crimeIdx:33,anchor:"Cheyenne",vaCount:1,climate:"Semi-arid, very cold winters",type:"state"},
 };
 
-// Expat destinations with extended detail. v3.8 fields:
+// Expat destinations with extended detail. v3.9 fields:
 // healthIdx: Numbeo Healthcare Index 2026 (0-100, higher better)
 // crimeIdx: Numbeo Crime Index 2026 (0-100, lower better)
 // rentIdx / groceriesIdx: Numbeo sub-indices rebased to US avg = 100
@@ -625,6 +625,78 @@ const PAY_TABLE={
 };
 
 const BAH_AVG={"E-5":1850,"E-6":2100,"E-7":2350,"E-8":2550,"E-9":2750,"W-3":2700,"W-4":2950,"W-5":3150,"O-3":2400,"O-4":2700,"O-5":2950,"O-6":3200,"O-7":3450};
+
+// 2026 GS Base Pay Table (Source: federalpay.org / OPM, effective Jan 11 2026).
+// Annual base pay before locality adjustment. Cap = Executive Schedule Level IV = $197,200.
+const GS_BASE_2026 = {
+  "GS-1":  [22584,23341,24092,24840,25589,26028,26771,27519,27550,28248],
+  "GS-2":  [25393,25997,26839,27550,27858,28677,29496,30315,31134,31953],
+  "GS-3":  [27708,28632,29556,30480,31404,32328,33252,34176,35100,36024],
+  "GS-4":  [31103,32140,33177,34214,35251,36288,37325,38362,39399,40436],
+  "GS-5":  [34799,35959,37119,38279,39439,40599,41759,42919,44079,45239],
+  "GS-6":  [38791,40084,41377,42670,43963,45256,46549,47842,49135,50428],
+  "GS-7":  [43106,44543,45980,47417,48854,50291,51728,53165,54602,56039],
+  "GS-8":  [47738,49329,50920,52511,54102,55693,57284,58875,60466,62057],
+  "GS-9":  [52727,54485,56243,58001,59759,61517,63275,65033,66791,68549],
+  "GS-10": [58064,59999,61934,63869,65804,67739,69674,71609,73544,75479],
+  "GS-11": [63795,65922,68049,70176,72303,74430,76557,78684,80811,82938],
+  "GS-12": [76463,79012,81561,84110,86659,89208,91757,94306,96855,99404],
+  "GS-13": [90925,93956,96987,100018,103049,106080,109111,112142,115173,118204],
+  "GS-14": [107446,111028,114610,118192,121774,125356,128938,132520,136102,139684],
+  "GS-15": [126384,130597,134810,139023,143236,147449,151662,155875,160088,164301],
+};
+const GS_PAY_CAP_2026=197200; // Executive Schedule Level IV
+
+// 2026 GS Locality Areas (top 35 by federal employment + RUS).
+// Locality % is the locality adjustment ON TOP of base pay (frozen at 2025 rates per EO 14368).
+const GS_LOCALITIES_2026 = {
+  RUS:{n:"Rest of US",                       pct:17.06},
+  WASH:{n:"Washington-Baltimore DC",         pct:33.94},
+  NY:{n:"New York-Newark",                   pct:38.72},
+  SF:{n:"San Francisco-San Jose",            pct:46.34},
+  LA:{n:"Los Angeles",                       pct:36.41},
+  HOU:{n:"Houston",                          pct:34.15},
+  SEA:{n:"Seattle-Tacoma",                   pct:29.54},
+  BOS:{n:"Boston",                           pct:32.86},
+  DEN:{n:"Denver-Aurora",                    pct:31.41},
+  CHI:{n:"Chicago",                          pct:31.31},
+  DET:{n:"Detroit",                          pct:27.22},
+  ATL:{n:"Atlanta",                          pct:25.04},
+  PHL:{n:"Philadelphia",                     pct:28.18},
+  SD:{n:"San Diego",                         pct:33.05},
+  MSP:{n:"Minneapolis-St. Paul",             pct:27.62},
+  DAL:{n:"Dallas-Fort Worth",                pct:25.42},
+  PHX:{n:"Phoenix",                          pct:22.95},
+  POR:{n:"Portland-Vancouver",               pct:26.62},
+  SAC:{n:"Sacramento",                       pct:30.43},
+  MIA:{n:"Miami-Fort Lauderdale",            pct:24.67},
+  HART:{n:"Hartford",                        pct:31.32},
+  CLE:{n:"Cleveland-Akron",                  pct:21.49},
+  PIT:{n:"Pittsburgh",                       pct:22.30},
+  CIN:{n:"Cincinnati",                       pct:22.32},
+  CLT:{n:"Charlotte",                        pct:19.42},
+  AUS:{n:"Austin",                           pct:21.64},
+  LV:{n:"Las Vegas",                         pct:19.55},
+  HNL:{n:"Honolulu",                         pct:21.79},
+  ANC:{n:"Anchorage",                        pct:32.80},
+  NFK:{n:"Norfolk-Virginia Beach",           pct:19.94},
+  IND:{n:"Indianapolis",                     pct:19.71},
+  ABQ:{n:"Albuquerque-Santa Fe",             pct:18.16},
+  STL:{n:"St. Louis",                        pct:20.03},
+  TPA:{n:"Tampa-St. Petersburg",             pct:18.31},
+  COS:{n:"Colorado Springs",                 pct:24.34},
+};
+
+// Title 10 §1595 faculty pay ranges (NDU, War Colleges, Naval Postgrad School).
+// Administratively Determined pay - actual rates not publicly tabled.
+// These are rough 2026 estimates based on benchmarks vs Executive Schedule and academic surveys.
+const TITLE10_FACULTY_2026 = {
+  inst: {n:"Instructor",            range:[75000,105000], typical:90000},
+  asst: {n:"Assistant Professor",   range:[95000,140000], typical:115000},
+  assoc:{n:"Associate Professor",   range:[130000,180000],typical:155000},
+  prof: {n:"Professor",             range:[160000,220000],typical:185000},
+  dist: {n:"Distinguished Professor",range:[200000,265000],typical:225000},
+};
 // 2026 Basic Allowance for Subsistence (BAS): officer ~$321, enlisted ~$466
 const BAS_AVG={"E-5":466,"E-6":466,"E-7":466,"E-8":466,"E-9":466,"W-3":321,"W-4":321,"W-5":321,"O-3":321,"O-4":321,"O-5":321,"O-6":321,"O-7":321};
 const TRICARE={prime_indiv:34,prime_family:68,select_indiv:18,select_family:38,overseas_family:60};
@@ -798,8 +870,22 @@ function App(){
   const [fersEnabled,setFersEnabled]=useState(true);
   const [fersStartAgeOffset,setFersStartAgeOffset]=useState(0); // months after military retirement before GS start
   const [fersYears,setFersYears]=useState(15);
-  const [fersGsHigh3Annual,setFersGsHigh3Annual]=useState(170000); // top-of-career GS-14/15 with locality
   const [fersMilBuyback,setFersMilBuyback]=useState(true);
+  // Structured pay inputs
+  const [fersPayType,setFersPayType]=useState("gs"); // "gs" or "title10"
+  const [gsGrade,setGsGrade]=useState("GS-15");
+  const [gsStep,setGsStep]=useState(5);
+  const [gsLocality,setGsLocality]=useState("WASH"); // most common for NDU/Pentagon area
+  const [t10Rank,setT10Rank]=useState("assoc"); // NDU faculty rank
+  const [t10ManualSalary,setT10ManualSalary]=useState(155000); // override for Title 10 AD pay
+  // Computed GS High-3 from structured inputs:
+  const computedGsHigh3=useMemo(()=>{
+    if(fersPayType==="title10")return t10ManualSalary;
+    const base=GS_BASE_2026[gsGrade]?.[gsStep-1]||0;
+    const localityPct=(GS_LOCALITIES_2026[gsLocality]?.pct||0)/100;
+    return Math.min(GS_PAY_CAP_2026, Math.round(base*(1+localityPct)));
+  },[fersPayType,gsGrade,gsStep,gsLocality,t10ManualSalary]);
+  const fersGsHigh3Annual=computedGsHigh3;
 
   // Derived: current age and accurate time-to-retirement.
   // currentAge: integer age from birth date today.
@@ -1122,6 +1208,7 @@ function App(){
      sbpOn,sbpBasePct,homeLocation,compareLocations,tspBalance,tspMonthly,tspGrowth,yearsToRetire,tspMonthlyDuringService,
      rothSelfBalance,rothSpouseBalance,rothMonthlyContrib,
      fersEnabled,fersStartAgeOffset,fersYears,fersGsHigh3Annual,fersMilBuyback,
+     fersPayType,gsGrade,gsStep,gsLocality,t10Rank,t10ManualSalary,
      civilianSalary,terminalDays,skillBridgeMo,pensionLagDays,lostBAH,tricarePlan,fedTaxOverride,
      ssBenefitFRA,ssClaimAge]);
 
@@ -1622,22 +1709,74 @@ function App(){
             </div>
 
             {fersEnabled&&<>
-              <div className="grid-3" style={{gap:14,marginTop:14}}>
+              {/* Pay system selector */}
+              <div style={{marginTop:14}}>
+                <SegField label="Pay system" value={fersPayType} setter={setFersPayType}
+                  options={[["gs","GS (General Schedule)"],["title10","Title 10 §1595 faculty (NDU/War Colleges)"]]}/>
+              </div>
+
+              {fersPayType==="gs"&&(
+                <div className="grid-3" style={{gap:14,marginTop:8}}>
+                  <SelectField label="GS Grade" value={gsGrade} setter={setGsGrade}
+                    options={Object.keys(GS_BASE_2026).map(g=>({v:g,l:g}))}/>
+                  <div className="field">
+                    <div className="field-label">
+                      <span>Step</span>
+                      <span className="field-value">Step {gsStep}</span>
+                    </div>
+                    <input type="range" className="range-track" min={1} max={10} step={1} value={gsStep} aria-label="GS Step" onChange={e=>setGsStep(Number(e.target.value))}/>
+                    <div className="field-help">Steps 1-10. Each step ≈ 3% increase.</div>
+                  </div>
+                  <SelectField label="Locality" value={gsLocality} setter={setGsLocality}
+                    options={Object.entries(GS_LOCALITIES_2026).map(([k,v])=>({v:k,l:`${v.n} (+${v.pct.toFixed(1)}%)`}))}/>
+                </div>
+              )}
+
+              {fersPayType==="title10"&&(
+                <div className="grid-2" style={{gap:14,marginTop:8}}>
+                  <SelectField label="Faculty rank" value={t10Rank} setter={setT10Rank}
+                    options={Object.entries(TITLE10_FACULTY_2026).map(([k,v])=>({v:k,l:`${v.n} (${fmt(v.range[0])}-${fmt(v.range[1])})`}))}/>
+                  <div className="field">
+                    <div className="field-label">
+                      <span>Annual salary (administratively determined)</span>
+                      <span className="field-value num">{fmt(t10ManualSalary)}</span>
+                    </div>
+                    <input type="range" className="range-track" min={75000} max={265000} step={1000} value={t10ManualSalary} aria-label="Title 10 salary" onChange={e=>setT10ManualSalary(Number(e.target.value))}/>
+                    <div className="field-help">
+                      Title 10 §1595 pay is set by the Secretary, not published in tables. Range for {TITLE10_FACULTY_2026[t10Rank].n}: {fmt(TITLE10_FACULTY_2026[t10Rank].range[0])}-{fmt(TITLE10_FACULTY_2026[t10Rank].range[1])}. Typical: {fmt(TITLE10_FACULTY_2026[t10Rank].typical)}.
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Computed salary + career timing */}
+              <div className="surface-inset" style={{marginTop:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                  <div>
+                    <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:600}}>Computed High-3 for FERS calc</div>
+                    <div className="num text-accent" style={{fontSize:24,fontWeight:500,marginTop:4}}>{fmt(fersGsHigh3Annual)}/yr</div>
+                    <div style={{fontSize:11.5,color:"var(--ink-3)",marginTop:2}}>
+                      {fersPayType==="gs"
+                        ?<>{gsGrade} Step {gsStep} base {fmt(GS_BASE_2026[gsGrade][gsStep-1])} + {GS_LOCALITIES_2026[gsLocality].pct.toFixed(1)}% locality{fersGsHigh3Annual>=GS_PAY_CAP_2026?" · capped at $197,200 (Exec Schedule IV)":""}</>
+                        :<>{TITLE10_FACULTY_2026[t10Rank].n} · Title 10 §1595 administratively determined</>}
+                    </div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:600}}>Estimated monthly</div>
+                    <div className="num" style={{fontSize:20,fontWeight:500,marginTop:4}}>{fmt(fersGsHigh3Annual/12)}/mo</div>
+                    <div style={{fontSize:11.5,color:"var(--ink-3)",marginTop:2}}>before taxes/benefits</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid-2" style={{gap:14,marginTop:14}}>
                 <div className="field">
                   <div className="field-label">
-                    <span>Years in GS career</span>
+                    <span>Years in this role</span>
                     <span className="field-value">{fersYears} yrs</span>
                   </div>
-                  <input type="range" className="range-track" min={3} max={30} step={1} value={fersYears} aria-label="Years in GS career" onChange={e=>setFersYears(Number(e.target.value))}/>
+                  <input type="range" className="range-track" min={3} max={30} step={1} value={fersYears} aria-label="Years in career" onChange={e=>setFersYears(Number(e.target.value))}/>
                   <div className="field-help">From age {retireAge+(fersStartAgeOffset/12).toFixed(0)} to age {calc.fersExitAge.toFixed(0)}.</div>
-                </div>
-                <div className="field">
-                  <div className="field-label">
-                    <span>GS High-3 (top 3 years avg)</span>
-                    <span className="field-value num">{fmt(fersGsHigh3Annual)}/yr</span>
-                  </div>
-                  <input type="range" className="range-track" min={80000} max={210000} step={2000} value={fersGsHigh3Annual} aria-label="GS High-3 annual salary" onChange={e=>setFersGsHigh3Annual(Number(e.target.value))}/>
-                  <div className="field-help">2026 GS-14 base $107K, GS-15 base $126K. Add locality (RUS +17%, DC +33%, SF +46%). Cap $197K.</div>
                 </div>
                 <div className="field">
                   <div className="field-label">
@@ -1753,7 +1892,9 @@ function App(){
                   <span className="field-value num">{fmt(ssBenefitFRA)}/mo</span>
                 </div>
                 <input type="range" className="range-track" min={500} max={5000} step={50} value={ssBenefitFRA} onChange={e=>setSsBenefitFRA(Number(e.target.value))}/>
-                <div className="field-help">Find your real number at <span style={{color:"var(--ink-2)"}}>ssa.gov/myaccount</span>. Military service earns SS credits like any civilian employment.</div>
+                <div className="field-help">
+                  Find your real number at <a href="https://www.ssa.gov/myaccount" target="_blank" rel="noopener" style={{color:"var(--accent)",textDecoration:"underline"}}>ssa.gov/myaccount</a> or use the <a href="https://www.ssa.gov/OACT/quickcalc/" target="_blank" rel="noopener" style={{color:"var(--accent)",textDecoration:"underline"}}>SSA Quick Calculator</a>. See "How to estimate without logging in" below for rough guidance.
+                </div>
               </div>
               <div className="field">
                 <div className="field-label">
@@ -1787,6 +1928,16 @@ function App(){
                 })}
               </div>
             </div>
+
+            <LearnBlock title="How to estimate your Social Security benefit without logging in">
+              <p>The accurate number comes from your earnings record at <a href="https://www.ssa.gov/myaccount" target="_blank" rel="noopener" style={{color:"var(--accent)",textDecoration:"underline"}}>ssa.gov/myaccount</a>. You can create an account in about 5 minutes. The "Your Latest Statement" PDF shows your projected benefit at 62, full retirement age (67), and 70 — already adjusted for your actual earnings history. <strong>This is the only authoritative source. There is no API for third-party tools to auto-pull it.</strong></p>
+              <p><strong>SSA Quick Calculator</strong> (<a href="https://www.ssa.gov/OACT/quickcalc/" target="_blank" rel="noopener" style={{color:"var(--accent)",textDecoration:"underline"}}>ssa.gov/OACT/quickcalc</a>) gives an estimate from your birth date + current annual salary, no login needed. Less accurate than your real record but close enough for planning.</p>
+              <p><strong>Rough estimates for typical military careers</strong> (assuming you also worked civilian or earned military pay through the 35-year average):</p>
+              <p>• <strong>E-7 to E-9 retiring at 20-30 years</strong>, then no significant civilian career: ~$2,000-2,600/mo at full retirement age<br/>• <strong>O-4 to O-5 retiring at 20-25 years</strong>, then no significant civilian career: ~$2,400-2,900/mo<br/>• <strong>O-6 retiring at 22-30 years</strong> with consistent above-average military pay: ~$2,700-3,200/mo<br/>• <strong>Add a 15-20 year federal civilian (GS) career on top</strong> at GS-13+: pushes you toward the maximum of ~$4,018/mo (2026 cap at full retirement age)<br/>• <strong>Add a high-earning private sector second career</strong>: similar effect, often hits the max</p>
+              <p><strong>Why the calculation is opaque:</strong> SS uses your 35 highest-earning years (indexed for inflation), runs them through a progressive bend-point formula, then applies COLA adjustments. The first ~$1,200/mo of indexed earnings is replaced at 90%, the next ~$6,000 at 32%, the rest at 15%. This is why high earners stop seeing big SS gains past a certain point — the formula is regressive at the top.</p>
+              <p><strong>For dual-military couples or military + GS:</strong> each spouse builds their own SS record. The lower earner can sometimes claim 50% of the higher earner's benefit if it exceeds their own (spousal benefit). Survivor benefits apply if either dies.</p>
+              <p><strong>Common mistake:</strong> assuming military service doesn't count toward SS. It does — military basic pay has been subject to FICA since 1957. BAH and BAS do NOT count toward SS (they're not taxable).</p>
+            </LearnBlock>
 
             <LearnBlock title="When to claim Social Security: early, on time, or delayed">
               <p>Social Security pays a base benefit at your Full Retirement Age (FRA) of 67 for those born 1960 or later. You can claim as early as 62 (with a permanent ~30% reduction) or delay to 70 (with a ~24% permanent increase). Every month matters: there is no "right answer," only tradeoffs.</p>
@@ -2034,7 +2185,7 @@ function App(){
         </section>
 
         <footer className="footer">
-          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.8 · A planning instrument for service members.</div>
+          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.9 · A planning instrument for service members.</div>
           Official retirement pay is determined by Defense Finance and Accounting Service (DFAS) based on your actual record. VA rates reflect 2026 (2.8% Cost of Living Adjustment, effective Dec 1 2025). Federal tax brackets per IRS Rev. Proc. 2025-32. State cost of living indices rebased from C2ER 2025. Expat cost of living, healthcare, and crime indices from Numbeo 2026 (crowdsourced). US state healthcare quality from US News &amp; World Report 2024-25 rankings. US state crime indices derived from FBI UCR 2024. English proficiency from EF EPI 2024. Property tax effective rates from Tax Foundation 2025. Tax treaty status is general; consult a tax professional for your specific situation. CRDP/CRSC, REDUX age-62 catch-up, and BRS lump sum are simplified models. Built in conversation with Claude. Verify with your retirement services office and a tax professional before locking in a date.
         </footer>
       </div>
@@ -2164,7 +2315,7 @@ function PrintMemo(props){
           Military Pension Studio
         </div>
         <div className="pm-title">Retirement Decision Memo</div>
-        <div className="pm-meta">Generated {dateStr} · v3.8</div>
+        <div className="pm-meta">Generated {dateStr} · v3.9</div>
       </div>
 
       <div className="pm-identity">
@@ -2442,7 +2593,7 @@ function Topbar(){
           <span className="brand-name">Military Pension Studio</span>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.8</span>
+          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.9</span>
         </div>
       </div>
     </div>
