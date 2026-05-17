@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Military Pension Studio v3.7 · A retirement instrument for service members</title>
+<title>Military Pension Studio v3.7.1 · A retirement instrument for service members</title>
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -421,13 +421,19 @@
     .pm-bars.ss{grid-template-columns:repeat(9,1fr);height:70px;margin:6px 0 2px}
     .pm-bars.ss .pm-bar-label{font-size:8.5px;margin-top:3px}
 
-    /* Compact locations for fitting up to 8 */
+    /* Compact locations for fitting up to ~5 with full detail */
     .pm-loc.compact{margin-bottom:2px}
     .pm-loc.compact .pm-loc-head{font-size:9px;margin-bottom:0;line-height:1.2}
     .pm-loc.compact .pm-loc-bar{height:3px;margin-bottom:1px}
     .pm-loc.compact .pm-loc-detail{font-size:7px;line-height:1.15}
     .pm-loc.compact .pm-loc-val{font-size:9.5px}
     .pm-loc.compact .pm-loc-tag{font-size:6.5px;padding:0 3px}
+
+    /* Tight variant drops the detail line so 6-8 locations all fit on one page */
+    .pm-loc.tight{margin-bottom:1px}
+    .pm-loc.tight .pm-loc-head{font-size:9.5px;margin-bottom:0}
+    .pm-loc.tight .pm-loc-bar{height:3px;margin-bottom:0}
+    .pm-loc.tight .pm-loc-detail{display:none}
 
     /* Prevent any panel from overflowing its grid row and pushing into the next one. */
     .pm-panel{max-height:100%;overflow:hidden}
@@ -500,7 +506,7 @@ const FED_STD_DEDUCTION_2026 = {single:16100, mfj:32200};
 
 // US States: tax treatment + COL index + property tax + disabled vet exemption + sales tax
 // COL index baseline: US average = 100 (rebased from C2ER 2025)
-// US States with extended detail. New v3.7 fields:
+// US States with extended detail. New v3.7.1 fields:
 // healthIdx: US News & World Report 2024-25 state health ranking, approx 0-100 (higher better)
 // crimeIdx: FBI UCR 2024 derived approx 0-100 (lower better)
 // anchor: representative city for cost-of-living and climate
@@ -560,7 +566,7 @@ const STATES = {
   WY:{n:"Wyoming",      tax:"none", col:91, prop:0.58,vex:"part",salesTax:5.44,healthIdx:68,crimeIdx:33,anchor:"Cheyenne",vaCount:1,climate:"Semi-arid, very cold winters",type:"state"},
 };
 
-// Expat destinations with extended detail. v3.7 fields:
+// Expat destinations with extended detail. v3.7.1 fields:
 // healthIdx: Numbeo Healthcare Index 2026 (0-100, higher better)
 // crimeIdx: Numbeo Crime Index 2026 (0-100, lower better)
 // rentIdx / groceriesIdx: Numbeo sub-indices rebased to US avg = 100
@@ -1810,7 +1816,7 @@ function App(){
         </section>
 
         <footer className="footer">
-          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.7 · A planning instrument for service members.</div>
+          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.7.1 · A planning instrument for service members.</div>
           Official retirement pay is determined by Defense Finance and Accounting Service (DFAS) based on your actual record. VA rates reflect 2026 (2.8% Cost of Living Adjustment, effective Dec 1 2025). Federal tax brackets per IRS Rev. Proc. 2025-32. State cost of living indices rebased from C2ER 2025. Expat cost of living, healthcare, and crime indices from Numbeo 2026 (crowdsourced). US state healthcare quality from US News &amp; World Report 2024-25 rankings. US state crime indices derived from FBI UCR 2024. English proficiency from EF EPI 2024. Property tax effective rates from Tax Foundation 2025. Tax treaty status is general; consult a tax professional for your specific situation. CRDP/CRSC, REDUX age-62 catch-up, and BRS lump sum are simplified models. Built in conversation with Claude. Verify with your retirement services office and a tax professional before locking in a date.
         </footer>
       </div>
@@ -1940,7 +1946,7 @@ function PrintMemo(props){
           Military Pension Studio
         </div>
         <div className="pm-title">Retirement Decision Memo</div>
-        <div className="pm-meta">Generated {dateStr} · v3.7</div>
+        <div className="pm-meta">Generated {dateStr} · v3.7.1</div>
       </div>
 
       <div className="pm-identity">
@@ -2067,28 +2073,21 @@ function PrintMemo(props){
           </div>
         </div>
 
-        {/* Column 3: Locations (compact, capped at 6 for print fit).
-            Always include home and the leader; fill the rest with top buying-power. */}
+        {/* Column 3: All selected locations always print.
+            When there are 5+ locations, switch to tight rows (no detail line) to fit. */}
         <div className="pm-panel">
           <div className="pm-panel-title">Where to live · monthly buying power</div>
           {(()=>{
             const all=[...calc.compareCalcs].sort((a,b)=>b.buyingPower-a.buyingPower);
-            const CAP=6;
-            // Build the cap-respecting list: ensure home + best are present, then fill by buying power.
-            const mustShow=new Set([homeLocation,calc.bestLocation.code]);
-            const shown=[];
-            // First pass: include the must-show locations in sorted order
-            all.forEach(s=>{if(mustShow.has(s.code))shown.push(s)});
-            // Second pass: fill remaining slots with top buying-power
-            all.forEach(s=>{if(shown.length<CAP&&!mustShow.has(s.code))shown.push(s)});
-            const dropped=all.length-shown.length;
+            const useTight=all.length>=5;
+            const rowClass=useTight?"tight":"compact";
             const max=Math.max(...calc.compareCalcs.map(c=>c.buyingPower));
             return(<>
-              {shown.map(s=>{
+              {all.map(s=>{
                 const leader=s.code===calc.bestLocation.code;
                 const isHome=s.code===homeLocation;
                 return(
-                  <div key={s.code} className={`pm-loc compact ${leader?"leader":""}`}>
+                  <div key={s.code} className={`pm-loc ${rowClass} ${leader?"leader":""}`}>
                     <div className="pm-loc-head">
                       <div className="pm-loc-name">
                         {s.name}
@@ -2105,8 +2104,8 @@ function PrintMemo(props){
                   </div>
                 );
               })}
-              {dropped>0&&(
-                <div className="pm-more-note">+ {dropped} more comparison{dropped>1?"s":""} on screen</div>
+              {useTight&&(
+                <div className="pm-more-note">Full per-location detail in on-screen view</div>
               )}
             </>);
           })()}
@@ -2225,7 +2224,7 @@ function Topbar(){
           <span className="brand-name">Military Pension Studio</span>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.7</span>
+          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.7.1</span>
         </div>
       </div>
     </div>
