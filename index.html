@@ -1910,6 +1910,8 @@ function App(){
         tspGrowth={tspGrowth}
         yearsToRetire={yearsToRetire}
         tspMonthlyDuringService={tspMonthlyDuringService}
+        currentAge={currentAge}
+        tspMaxMonthly={tspMaxMonthly}
       />
     </div>
   );
@@ -1921,7 +1923,8 @@ function App(){
 function PrintMemo(props){
   const {calc,rank,system,years,retireMonth,retireAge,vaRating,hasSpouse,kids,
          filingStatus,homeLocation,ssClaimAge,ssBenefitFRA,sbpOn,sbpBasePct,
-         tspBalance,tspGrowth,yearsToRetire,tspMonthlyDuringService}=props;
+         tspBalance,tspGrowth,yearsToRetire,tspMonthlyDuringService,
+         currentAge,tspMaxMonthly}=props;
   const today=new Date();
   const dateStr=today.toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"});
   const systemLabel={high3:"High-3",brs:"BRS",redux:"REDUX",finalpay:"Final Pay"}[system];
