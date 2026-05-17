@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Military Pension Studio v3.7.2 · A retirement instrument for service members</title>
+<title>Military Pension Studio v3.8 · A retirement instrument for service members</title>
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -506,7 +506,7 @@ const FED_STD_DEDUCTION_2026 = {single:16100, mfj:32200};
 
 // US States: tax treatment + COL index + property tax + disabled vet exemption + sales tax
 // COL index baseline: US average = 100 (rebased from C2ER 2025)
-// US States with extended detail. New v3.7.2 fields:
+// US States with extended detail. New v3.8 fields:
 // healthIdx: US News & World Report 2024-25 state health ranking, approx 0-100 (higher better)
 // crimeIdx: FBI UCR 2024 derived approx 0-100 (lower better)
 // anchor: representative city for cost-of-living and climate
@@ -566,7 +566,7 @@ const STATES = {
   WY:{n:"Wyoming",      tax:"none", col:91, prop:0.58,vex:"part",salesTax:5.44,healthIdx:68,crimeIdx:33,anchor:"Cheyenne",vaCount:1,climate:"Semi-arid, very cold winters",type:"state"},
 };
 
-// Expat destinations with extended detail. v3.7.2 fields:
+// Expat destinations with extended detail. v3.8 fields:
 // healthIdx: Numbeo Healthcare Index 2026 (0-100, higher better)
 // crimeIdx: Numbeo Crime Index 2026 (0-100, lower better)
 // rentIdx / groceriesIdx: Numbeo sub-indices rebased to US avg = 100
@@ -793,6 +793,14 @@ function App(){
   const [rothSpouseBalance,setRothSpouseBalance]=useState(35000);
   const [rothMonthlyContrib,setRothMonthlyContrib]=useState(0); // combined monthly into both Roths
 
+  // Federal civilian (FERS) overlay - second career after military retirement.
+  // Sources: OPM, FERS Retirement Guide 2026, FERS military buyback rules (4.25% interest 2026).
+  const [fersEnabled,setFersEnabled]=useState(true);
+  const [fersStartAgeOffset,setFersStartAgeOffset]=useState(0); // months after military retirement before GS start
+  const [fersYears,setFersYears]=useState(15);
+  const [fersGsHigh3Annual,setFersGsHigh3Annual]=useState(170000); // top-of-career GS-14/15 with locality
+  const [fersMilBuyback,setFersMilBuyback]=useState(true);
+
   // Derived: current age and accurate time-to-retirement.
   // currentAge: integer age from birth date today.
   // retirementDate: month 1 of (birthYear + retireAge). E.g., born Aug 1980 + retire at 50 + June = June 1, 2030.
@@ -1013,6 +1021,56 @@ function App(){
     const portfolioAt59_5=tspAt59_5+rothAt59_5;
     const portfolioAt67=tspAt67+rothAt67;
 
+    // ============ FERS (federal civilian second career) calculations ============
+    // MRA (Minimum Retirement Age) by birth year. Born 1970+: MRA = 57.
+    const birthYearForMra=birthDate?new Date(birthDate).getFullYear():1980;
+    const fersMra=birthYearForMra<1948?55:birthYearForMra<1953?55+(birthYearForMra-1948)/6:
+                  birthYearForMra<1965?56:birthYearForMra<1970?56+(birthYearForMra-1965)/6:57;
+    const fersStartAge=retireAge+(fersStartAgeOffset/12);
+    const fersExitAge=fersStartAge+fersYears;
+    // Buyback adds military YOS to FERS pension years. Limited to actual military YOS.
+    const fersMilYearsCredited=fersMilBuyback?years:0;
+    const fersTotalYos=fersYears+fersMilYearsCredited;
+    // FERS multiplier: 1.0% standard, 1.1% if retire at 62+ with 20+ YOS
+    const fersMultiplier=(fersExitAge>=62 && fersTotalYos>=20)?0.011:0.010;
+    // Eligibility for immediate (unreduced) pension
+    const fersImmediate=(fersExitAge>=62 && fersTotalYos>=5)||
+                         (fersExitAge>=60 && fersTotalYos>=20)||
+                         (fersExitAge>=fersMra && fersTotalYos>=30);
+    const fersMra10=!fersImmediate && fersExitAge>=fersMra && fersTotalYos>=10;
+    // MRA+10 reduction: 5% per year under 62
+    const fersAgeReduction=fersMra10?Math.max(0,(62-fersExitAge)*0.05):0;
+    const fersEligible=fersImmediate||fersMra10;
+    // Annual FERS pension
+    const fersAnnualGross=fersEligible?fersMultiplier*fersTotalYos*fersGsHigh3Annual*(1-fersAgeReduction):0;
+    const fersMonthlyGross=fersAnnualGross/12;
+
+    // Military buyback deposit cost.
+    // Rough: 3% of total military base pay over career, plus interest if not paid early.
+    // Approximate average career base pay = high3 × 0.7 (career grows from E-1/O-1 to high-3).
+    const avgCareerBasePay=highThree*0.7;
+    const totalMilBasePay=avgCareerBasePay*12*years;
+    const fersBuybackDepositBase=totalMilBasePay*0.03;
+    // Interest factor: ~4.25% over typical 10-15 year gap before deposit completed.
+    // Use 1.0 (paid early, no interest) for SWAP's case since paid during first 3 yrs.
+    const fersBuybackDepositWithInterest=fersBuybackDepositBase*1.0;
+    // Annual pension bump from buyback
+    const fersBuybackAnnualBump=fersMilBuyback?(fersMultiplier*years*fersGsHigh3Annual):0;
+    const fersBuybackBreakevenYears=fersBuybackAnnualBump>0?fersBuybackDepositWithInterest/fersBuybackAnnualBump:Infinity;
+
+    // Special Retirement Supplement (SRS): bridges MRA to age 62 for those who retired
+    // under MRA+30 or 60+20. Approximate formula: (FERS-only YOS / 40) × estimated SS at 62.
+    // Note: SRS does NOT include military buyback YOS in the calculation.
+    const fersSrsEligible=fersImmediate && fersExitAge<62 &&
+                          ((fersExitAge>=fersMra && fersYears>=30)||(fersExitAge>=60 && fersYears>=20));
+    const estimatedSsAt62=ssBenefitFRA*0.7; // SS at 62 = ~70% of FRA benefit
+    const fersSrsMonthly=fersSrsEligible?(fersYears/40)*estimatedSsAt62:0;
+    const fersSrsMonths=fersSrsEligible?(62-fersExitAge)*12:0;
+
+    // FERS lifetime (from fersExitAge to lifespan)
+    const fersYearsCollected=Math.max(0,totalLifespan-fersExitAge);
+    const fersLifetime=fersEnabled?fersMonthlyGross*12*fersYearsCollected:0;
+
     const civilianMonthly=civilianSalary/12;
     // Civilian salary is taxable. Net it by fed + (home state) effective rates.
     const civilianMonthlyNet=civilianMonthly*(1-effectiveFedRate-homeCalc.stateTaxRate);
@@ -1050,6 +1108,12 @@ function App(){
       rothCombinedNow,rothAtRetirement,rothAt59_5,rothAt67,
       portfolioAtRetirement,portfolioAt59_5,portfolioAt67,
       civilianMonthly,terminalLeavePay,householdRunway,
+      fersMra,fersStartAge,fersExitAge,fersTotalYos,fersMultiplier,
+      fersImmediate,fersMra10,fersEligible,fersAgeReduction,
+      fersAnnualGross,fersMonthlyGross,
+      fersBuybackDepositWithInterest,fersBuybackAnnualBump,fersBuybackBreakevenYears,
+      fersSrsEligible,fersSrsMonthly,fersSrsMonths,fersLifetime,
+      fersYearsCollected,fersMilYearsCredited,
       ssMonthly,ssYearsCollected,ssLifetime,yearsUntilSS,
       basMonthly,adMonthlyTakehome,adBaseTakehome,monthlyGapVsAD,targetCivilianAnnual,civilianGapStatus,
     };
@@ -1057,6 +1121,7 @@ function App(){
      brsLump,discountRate,vaRating,hasSpouse,kids,combatRelated,
      sbpOn,sbpBasePct,homeLocation,compareLocations,tspBalance,tspMonthly,tspGrowth,yearsToRetire,tspMonthlyDuringService,
      rothSelfBalance,rothSpouseBalance,rothMonthlyContrib,
+     fersEnabled,fersStartAgeOffset,fersYears,fersGsHigh3Annual,fersMilBuyback,
      civilianSalary,terminalDays,skillBridgeMo,pensionLagDays,lostBAH,tricarePlan,fedTaxOverride,
      ssBenefitFRA,ssClaimAge]);
 
@@ -1532,6 +1597,136 @@ function App(){
             </LearnBlock>
           </div>
 
+          {/* ===== Federal civilian (FERS) overlay ===== */}
+          <div className="surface" style={{marginTop:24}}>
+            <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:8,gap:16,flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500}}>Federal civilian (GS / FERS) second career</div>
+                <div className="display" style={{fontSize:20,marginTop:4}}>
+                  {fersEnabled
+                    ?<>FERS at exit age <span className="text-accent">{calc.fersExitAge.toFixed(0)}</span> → <span className="num text-accent">{fmt(calc.fersMonthlyGross)}</span>/mo for life <Conf level="medium"/></>
+                    :<>Disabled. Toggle on to model a federal civilian second career after military retirement.</>}
+                </div>
+                {fersEnabled&&(
+                  <div style={{fontSize:12,color:"var(--ink-3)",marginTop:4}}>
+                    {calc.fersTotalYos.toFixed(1)} FERS years × {(calc.fersMultiplier*100).toFixed(1)}% × {fmt(fersGsHigh3Annual)} high-3
+                    {fersMilBuyback&&" · includes "+years+" military years bought back"}
+                  </div>
+                )}
+              </div>
+              <div className="toggle-row" style={{marginBottom:0}}>
+                <span>Plan to work GS</span>
+                <button type="button" role="switch" aria-checked={fersEnabled} aria-label="Toggle FERS second career"
+                  className={`toggle ${fersEnabled?"on":""}`} onClick={()=>setFersEnabled(!fersEnabled)}/>
+              </div>
+            </div>
+
+            {fersEnabled&&<>
+              <div className="grid-3" style={{gap:14,marginTop:14}}>
+                <div className="field">
+                  <div className="field-label">
+                    <span>Years in GS career</span>
+                    <span className="field-value">{fersYears} yrs</span>
+                  </div>
+                  <input type="range" className="range-track" min={3} max={30} step={1} value={fersYears} aria-label="Years in GS career" onChange={e=>setFersYears(Number(e.target.value))}/>
+                  <div className="field-help">From age {retireAge+(fersStartAgeOffset/12).toFixed(0)} to age {calc.fersExitAge.toFixed(0)}.</div>
+                </div>
+                <div className="field">
+                  <div className="field-label">
+                    <span>GS High-3 (top 3 years avg)</span>
+                    <span className="field-value num">{fmt(fersGsHigh3Annual)}/yr</span>
+                  </div>
+                  <input type="range" className="range-track" min={80000} max={210000} step={2000} value={fersGsHigh3Annual} aria-label="GS High-3 annual salary" onChange={e=>setFersGsHigh3Annual(Number(e.target.value))}/>
+                  <div className="field-help">2026 GS-14 base $107K, GS-15 base $126K. Add locality (RUS +17%, DC +33%, SF +46%). Cap $197K.</div>
+                </div>
+                <div className="field">
+                  <div className="field-label">
+                    <span>Start delay after military retirement</span>
+                    <span className="field-value">{fersStartAgeOffset} mo</span>
+                  </div>
+                  <input type="range" className="range-track" min={0} max={24} step={1} value={fersStartAgeOffset} aria-label="Months between military retirement and FERS start" onChange={e=>setFersStartAgeOffset(Number(e.target.value))}/>
+                  <div className="field-help">Time off between military exit and federal civilian hire.</div>
+                </div>
+              </div>
+
+              {/* Eligibility + buyback decision */}
+              <div className="grid-2" style={{gap:14,marginTop:14}}>
+                <div className="surface-inset">
+                  <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:600,marginBottom:8}}>Eligibility at exit · age {calc.fersExitAge.toFixed(0)}</div>
+                  <div style={{fontSize:13,lineHeight:1.6}}>
+                    <div>MRA (your birth year): <b>age {calc.fersMra}</b></div>
+                    <div>FERS YOS at exit: <b>{calc.fersTotalYos.toFixed(1)}</b> ({fersYears} civilian{fersMilBuyback?" + "+years+" military bought back":""})</div>
+                    <div>Multiplier: <b>{(calc.fersMultiplier*100).toFixed(1)}%</b> {calc.fersMultiplier===0.011?<span className="text-pos">(62+ with 20+ YOS bonus)</span>:""}</div>
+                    <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid var(--line)"}}>
+                      Status: {calc.fersImmediate
+                        ?<b className="text-pos">Immediate unreduced annuity</b>
+                        :calc.fersMra10
+                          ?<b className="text-accent">MRA+10 reduced ({(calc.fersAgeReduction*100).toFixed(0)}% penalty)</b>
+                          :<b className="text-neg">Not eligible at this age/YOS</b>}
+                    </div>
+                  </div>
+                </div>
+                <div className="surface-inset">
+                  <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:600,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span>Military buyback decision</span>
+                    <button type="button" role="switch" aria-checked={fersMilBuyback} aria-label="Toggle military buyback"
+                      className={`toggle ${fersMilBuyback?"on":""}`} onClick={()=>setFersMilBuyback(!fersMilBuyback)}/>
+                  </div>
+                  <div style={{fontSize:13,lineHeight:1.6}}>
+                    <div>Estimated deposit: <b className="num">{fmt(calc.fersBuybackDepositWithInterest)}</b></div>
+                    <div>Annual pension bump: <b className="num text-accent">{fmt(calc.fersBuybackAnnualBump)}/yr</b></div>
+                    <div>Breakeven: <b>{calc.fersBuybackBreakevenYears<1?"under 1 year":calc.fersBuybackBreakevenYears.toFixed(1)+" years"}</b> after retirement</div>
+                    <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid var(--line)",fontSize:12,color:"var(--ink-3)"}}>
+                      {calc.fersBuybackBreakevenYears<3
+                        ?"Math strongly favors buying back. Complete deposit in first 3 years of FERS service to avoid 4.25% interest."
+                        :"Buyback math is marginal at this scenario. Run the OPM estimator for precise numbers."}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Special Retirement Supplement */}
+              {calc.fersSrsEligible&&(
+                <div className="surface-inset" style={{marginTop:14,borderLeft:"3px solid var(--accent)"}}>
+                  <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:600,marginBottom:6}}>Special Retirement Supplement (SRS) <Conf level="medium"/></div>
+                  <div style={{fontSize:14}}>
+                    <b className="num text-accent">{fmt(calc.fersSrsMonthly)}/mo</b> from age {calc.fersExitAge.toFixed(0)} to age 62 ({calc.fersSrsMonths} months total).
+                    Bridges FERS retirement to Social Security eligibility. Subject to earnings test if you work post-FERS.
+                  </div>
+                </div>
+              )}
+
+              {/* Lifetime stacked income preview */}
+              <div className="grid-3" style={{gap:8,marginTop:14}}>
+                <div className="surface-inset">
+                  <div style={{fontSize:10.5,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>Military pension</div>
+                  <div className="num text-accent" style={{fontSize:18,fontWeight:500,marginTop:4}}>{fmt(calc.homeCalc.netTotal)}/mo</div>
+                  <div style={{fontSize:11,color:"var(--ink-3)",marginTop:2}}>starts age {retireAge}</div>
+                </div>
+                <div className="surface-inset">
+                  <div style={{fontSize:10.5,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>FERS pension</div>
+                  <div className="num text-accent" style={{fontSize:18,fontWeight:500,marginTop:4}}>{fmt(calc.fersMonthlyGross)}/mo</div>
+                  <div style={{fontSize:11,color:"var(--ink-3)",marginTop:2}}>starts age {calc.fersExitAge.toFixed(0)}</div>
+                </div>
+                <div className="surface-inset">
+                  <div style={{fontSize:10.5,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>Stacked at age 67</div>
+                  <div className="num text-accent" style={{fontSize:18,fontWeight:500,marginTop:4}}>{fmt(calc.homeCalc.netTotal+calc.fersMonthlyGross+calc.ssMonthly)}/mo</div>
+                  <div style={{fontSize:11,color:"var(--ink-3)",marginTop:2}}>military + FERS + SS</div>
+                </div>
+              </div>
+
+              <LearnBlock title="FERS retirement: eligibility, buyback math, and FEHB">
+                <p>The Federal Employees Retirement System (FERS) covers federal civilian employees hired after 1984. The annuity formula is <strong>1.0% × YOS × High-3</strong> (1.1% if you retire at 62+ with 20+ years of service). High-3 is the average of your three highest consecutive years of basic pay.</p>
+                <p><strong>Retirement eligibility paths:</strong></p>
+                <p>• <strong>Age 62 with 5 years:</strong> immediate unreduced annuity, 1.1% multiplier<br/>• <strong>Age 60 with 20 years:</strong> immediate unreduced, 1.0% multiplier<br/>• <strong>MRA with 30 years:</strong> immediate unreduced (MRA is 57 for those born 1970+)<br/>• <strong>MRA with 10 years:</strong> reduced by 5% per year under 62</p>
+                <p><strong>Military Service Credit Deposit ("buyback"):</strong> pay 3% of your military basic pay (BAH/BAS/special pay don't count) plus 4.25% interest (2026 rate) after a 2-year grace period. In return, your military years count toward FERS pension AND eligibility. For a 26-year O-6 buying back into a 15-year FERS career, this is often a <strong>4-7 month breakeven decision</strong>. Almost always worth it.</p>
+                <p><strong>Critical deadline:</strong> the deposit must be paid in full BEFORE you separate from federal service. Once you submit your retirement application, the window closes. No exceptions.</p>
+                <p><strong>Special Retirement Supplement (SRS):</strong> if you retire under MRA+30 or 60+20, FERS pays a monthly supplement from retirement until age 62 that approximates the SS benefit you'd earn under FERS-only service. Subject to earnings test if you take post-retirement income. Stops at 62 (when you can claim SS proper).</p>
+                <p><strong>FEHB after retirement:</strong> Federal Employees Health Benefits can carry into retirement if you enrolled for the 5 years immediately before retiring. Retiree premium is the same as employee share (~$200-400/mo for self+1). Many military retirees use FEHB alongside TRICARE for belt-and-suspenders coverage.</p>
+              </LearnBlock>
+            </>}
+          </div>
+
           {/* ===== Social Security ===== */}
           <div className="surface" style={{marginTop:24}}>
             <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:8,gap:16,flexWrap:"wrap"}}>
@@ -1839,7 +2034,7 @@ function App(){
         </section>
 
         <footer className="footer">
-          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.7.2 · A planning instrument for service members.</div>
+          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.8 · A planning instrument for service members.</div>
           Official retirement pay is determined by Defense Finance and Accounting Service (DFAS) based on your actual record. VA rates reflect 2026 (2.8% Cost of Living Adjustment, effective Dec 1 2025). Federal tax brackets per IRS Rev. Proc. 2025-32. State cost of living indices rebased from C2ER 2025. Expat cost of living, healthcare, and crime indices from Numbeo 2026 (crowdsourced). US state healthcare quality from US News &amp; World Report 2024-25 rankings. US state crime indices derived from FBI UCR 2024. English proficiency from EF EPI 2024. Property tax effective rates from Tax Foundation 2025. Tax treaty status is general; consult a tax professional for your specific situation. CRDP/CRSC, REDUX age-62 catch-up, and BRS lump sum are simplified models. Built in conversation with Claude. Verify with your retirement services office and a tax professional before locking in a date.
         </footer>
       </div>
@@ -1969,7 +2164,7 @@ function PrintMemo(props){
           Military Pension Studio
         </div>
         <div className="pm-title">Retirement Decision Memo</div>
-        <div className="pm-meta">Generated {dateStr} · v3.7.2</div>
+        <div className="pm-meta">Generated {dateStr} · v3.8</div>
       </div>
 
       <div className="pm-identity">
@@ -2247,7 +2442,7 @@ function Topbar(){
           <span className="brand-name">Military Pension Studio</span>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.7.2</span>
+          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.8</span>
         </div>
       </div>
     </div>
