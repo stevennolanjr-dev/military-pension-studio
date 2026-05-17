@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Military Pension Studio v3.5.1 · A retirement instrument for service members</title>
+<title>Military Pension Studio v3.6 · A retirement instrument for service members</title>
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -109,6 +109,59 @@
   .shoot-detail{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-2)}
   .shoot-detail b{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
   @media(max-width:640px){.shoot-row{grid-template-columns:90px 1fr auto;gap:10px;padding:12px}}
+
+  /* Location detail card (click-to-expand) */
+  .shoot-toggle{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    background:none;border:none;padding:0;color:inherit;
+    font:inherit;font-weight:500;font-size:15px;cursor:pointer;
+    text-align:left;
+  }
+  .shoot-toggle:hover{color:var(--accent)}
+  .shoot-toggle:hover .shoot-caret{color:var(--accent)}
+  .shoot-toggle:focus{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  .shoot-caret{color:var(--ink-3);font-size:11px;transition:transform var(--duration) var(--ease);width:10px;text-align:center}
+  .shoot-row.expanded{background:var(--surface-2)}
+  .shoot-detail-card{
+    grid-column:1/-1;margin-top:14px;padding-top:14px;
+    border-top:1px solid var(--line-2);
+  }
+  .ldc-grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:14px;
+  }
+  .ldc-cell{
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    padding:12px 14px;
+    display:flex;flex-direction:column;gap:6px;
+    min-width:0;
+  }
+  .ldc-label{
+    font-size:11px;text-transform:uppercase;letter-spacing:0.06em;
+    color:var(--ink-3);font-weight:600;
+    display:flex;align-items:center;gap:6px;
+  }
+  .ldc-value{
+    font-size:15px;font-weight:500;color:var(--ink);
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  }
+  .ldc-sub{
+    font-size:11.5px;color:var(--ink-3);line-height:1.4;margin-top:auto;
+  }
+  .ldc-bar{
+    flex:1;min-width:50px;height:5px;background:var(--surface-3);
+    border-radius:99px;overflow:hidden;
+  }
+  .ldc-bar-fill{
+    height:100%;border-radius:99px;
+    transition:width var(--duration) var(--ease);
+  }
+  .ldc-note{
+    margin-top:14px;padding:10px 14px;
+    background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:6px;font-size:12.5px;color:var(--ink-2);line-height:1.5;
+  }
+  .ldc-note b{color:var(--ink);font-weight:600}
 
   .drawer-backdrop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,0.4);opacity:0;pointer-events:none;transition:opacity var(--duration) var(--ease)}
   .drawer-backdrop.open{opacity:1;pointer-events:auto}
@@ -440,92 +493,102 @@ const FED_STD_DEDUCTION_2026 = {single:16100, mfj:32200};
 
 // US States: tax treatment + COL index + property tax + disabled vet exemption + sales tax
 // COL index baseline: US average = 100 (rebased from C2ER 2025)
+// US States with extended detail. New v3.6 fields:
+// healthIdx: US News & World Report 2024-25 state health ranking, approx 0-100 (higher better)
+// crimeIdx: FBI UCR 2024 derived approx 0-100 (lower better)
+// anchor: representative city for cost-of-living and climate
+// vaCount: rough VA medical center count (+ many outpatient clinics statewide)
+// climate: short descriptor
 const STATES = {
-  AL:{n:"Alabama",      tax:"full", col:91, prop:0.39,vex:"100%",salesTax:9.29,type:"state"},
-  AK:{n:"Alaska",       tax:"none", col:127,prop:1.04,vex:"100%",salesTax:1.82,type:"state"},
-  AZ:{n:"Arizona",      tax:"full", col:102,prop:0.62,vex:"part",salesTax:8.40,type:"state"},
-  AR:{n:"Arkansas",     tax:"full", col:90, prop:0.61,vex:"100%",salesTax:9.46,type:"state"},
-  CA:{n:"California",   tax:"taxed",col:143,prop:0.75,vex:"part",salesTax:8.85,type:"state"},
-  CO:{n:"Colorado",     tax:"part", col:105,prop:0.51,vex:"part",salesTax:7.81,type:"state"},
-  CT:{n:"Connecticut",  tax:"full", col:113,prop:1.79,vex:"part",salesTax:6.35,type:"state"},
-  DE:{n:"Delaware",     tax:"part", col:100,prop:0.61,vex:"part",salesTax:0,   type:"state"},
-  DC:{n:"DC",           tax:"taxed",col:140,prop:0.57,vex:"none",salesTax:6.00,type:"state"},
-  FL:{n:"Florida",      tax:"none", col:101,prop:0.91,vex:"100%",salesTax:7.02,type:"state"},
-  GA:{n:"Georgia",      tax:"part", col:91, prop:0.81,vex:"part",salesTax:7.40,type:"state"},
-  HI:{n:"Hawaii",       tax:"full", col:188,prop:0.27,vex:"100%",salesTax:4.50,type:"state"},
-  ID:{n:"Idaho",        tax:"part", col:95, prop:0.62,vex:"part",salesTax:6.03,type:"state"},
-  IL:{n:"Illinois",     tax:"full", col:99, prop:2.07,vex:"100%",salesTax:8.85,type:"state"},
-  IN:{n:"Indiana",      tax:"full", col:91, prop:0.82,vex:"part",salesTax:7.00,type:"state"},
-  IA:{n:"Iowa",         tax:"full", col:90, prop:1.43,vex:"100%",salesTax:6.94,type:"state"},
-  KS:{n:"Kansas",       tax:"full", col:87, prop:1.34,vex:"part",salesTax:8.66,type:"state"},
-  KY:{n:"Kentucky",     tax:"part", col:92, prop:0.78,vex:"part",salesTax:6.00,type:"state"},
-  LA:{n:"Louisiana",    tax:"full", col:91, prop:0.55,vex:"100%",salesTax:9.55,type:"state"},
-  ME:{n:"Maine",        tax:"full", col:105,prop:1.06,vex:"part",salesTax:5.50,type:"state"},
-  MD:{n:"Maryland",     tax:"part", col:116,prop:1.05,vex:"100%",salesTax:6.00,type:"state"},
-  MA:{n:"Massachusetts",tax:"full", col:148,prop:1.04,vex:"part",salesTax:6.25,type:"state"},
-  MI:{n:"Michigan",     tax:"full", col:90, prop:1.38,vex:"100%",salesTax:6.00,type:"state"},
-  MN:{n:"Minnesota",    tax:"full", col:103,prop:1.05,vex:"part",salesTax:7.50,type:"state"},
-  MS:{n:"Mississippi",  tax:"full", col:86, prop:0.79,vex:"none",salesTax:7.07,type:"state"},
-  MO:{n:"Missouri",     tax:"full", col:88, prop:0.88,vex:"part",salesTax:8.39,type:"state"},
-  MT:{n:"Montana",      tax:"taxed",col:95, prop:0.74,vex:"part",salesTax:0,   type:"state"},
-  NE:{n:"Nebraska",     tax:"full", col:90, prop:1.54,vex:"none",salesTax:6.97,type:"state"},
-  NV:{n:"Nevada",       tax:"none", col:102,prop:0.55,vex:"part",salesTax:8.24,type:"state"},
-  NH:{n:"New Hampshire",tax:"none", col:106,prop:1.93,vex:"part",salesTax:0,   type:"state"},
-  NJ:{n:"New Jersey",   tax:"full", col:111,prop:2.23,vex:"100%",salesTax:6.61,type:"state"},
-  NM:{n:"New Mexico",   tax:"part", col:93, prop:0.78,vex:"part",salesTax:7.84,type:"state"},
-  NY:{n:"New York",     tax:"full", col:134,prop:1.40,vex:"part",salesTax:8.53,type:"state"},
-  NC:{n:"North Carolina",tax:"full",col:96, prop:0.77,vex:"part",salesTax:6.99,type:"state"},
-  ND:{n:"North Dakota", tax:"full", col:93, prop:0.89,vex:"part",salesTax:6.97,type:"state"},
-  OH:{n:"Ohio",         tax:"full", col:92, prop:1.41,vex:"part",salesTax:7.24,type:"state"},
-  OK:{n:"Oklahoma",     tax:"part", col:86, prop:0.89,vex:"100%",salesTax:8.99,type:"state"},
-  OR:{n:"Oregon",       tax:"part", col:115,prop:0.86,vex:"part",salesTax:0,   type:"state"},
-  PA:{n:"Pennsylvania", tax:"full", col:96, prop:1.41,vex:"100%",salesTax:6.34,type:"state"},
-  RI:{n:"Rhode Island", tax:"taxed",col:107,prop:1.30,vex:"part",salesTax:7.00,type:"state"},
-  SC:{n:"South Carolina",tax:"part",col:95, prop:0.55,vex:"100%",salesTax:7.50,type:"state"},
-  SD:{n:"South Dakota", tax:"none", col:90, prop:1.14,vex:"100%",salesTax:6.40,type:"state"},
-  TN:{n:"Tennessee",    tax:"none", col:89, prop:0.66,vex:"part",salesTax:9.55,type:"state"},
-  TX:{n:"Texas",        tax:"none", col:92, prop:1.60,vex:"100%",salesTax:8.20,type:"state"},
-  UT:{n:"Utah",         tax:"full", col:95, prop:0.58,vex:"part",salesTax:7.27,type:"state"},
-  VT:{n:"Vermont",      tax:"taxed",col:109,prop:1.83,vex:"part",salesTax:6.36,type:"state"},
-  VA:{n:"Virginia",     tax:"part", col:100,prop:0.86,vex:"100%",salesTax:5.77,type:"state"},
-  WA:{n:"Washington",   tax:"none", col:114,prop:0.87,vex:"part",salesTax:9.40,type:"state"},
-  WV:{n:"West Virginia",tax:"part", col:87, prop:0.54,vex:"part",salesTax:6.55,type:"state"},
-  WI:{n:"Wisconsin",    tax:"full", col:95, prop:1.51,vex:"part",salesTax:5.43,type:"state"},
-  WY:{n:"Wyoming",      tax:"none", col:91, prop:0.58,vex:"part",salesTax:5.44,type:"state"},
+  AL:{n:"Alabama",      tax:"full", col:91, prop:0.39,vex:"100%",salesTax:9.29,healthIdx:58,crimeIdx:55,anchor:"Birmingham",vaCount:3,climate:"Humid subtropical, hot summers",type:"state"},
+  AK:{n:"Alaska",       tax:"none", col:127,prop:1.04,vex:"100%",salesTax:1.82,healthIdx:70,crimeIdx:60,anchor:"Anchorage",vaCount:1,climate:"Subarctic, cold dark winters",type:"state"},
+  AZ:{n:"Arizona",      tax:"full", col:102,prop:0.62,vex:"part",salesTax:8.40,healthIdx:69,crimeIdx:50,anchor:"Phoenix",vaCount:3,climate:"Hot desert, mild winters",type:"state"},
+  AR:{n:"Arkansas",     tax:"full", col:90, prop:0.61,vex:"100%",salesTax:9.46,healthIdx:56,crimeIdx:58,anchor:"Little Rock",vaCount:2,climate:"Humid subtropical",type:"state"},
+  CA:{n:"California",   tax:"taxed",col:143,prop:0.75,vex:"part",salesTax:8.85,healthIdx:76,crimeIdx:52,anchor:"San Diego",vaCount:9,climate:"Mediterranean coast, desert inland",type:"state"},
+  CO:{n:"Colorado",     tax:"part", col:105,prop:0.51,vex:"part",salesTax:7.81,healthIdx:78,crimeIdx:50,anchor:"Colorado Springs",vaCount:2,climate:"Semi-arid mountain, cold winters",type:"state"},
+  CT:{n:"Connecticut",  tax:"full", col:113,prop:1.79,vex:"part",salesTax:6.35,healthIdx:85,crimeIdx:34,anchor:"Hartford",vaCount:1,climate:"Humid continental, snowy winters",type:"state"},
+  DE:{n:"Delaware",     tax:"part", col:100,prop:0.61,vex:"part",salesTax:0,   healthIdx:73,crimeIdx:45,anchor:"Wilmington",vaCount:1,climate:"Humid subtropical",type:"state"},
+  DC:{n:"DC",           tax:"taxed",col:140,prop:0.57,vex:"none",salesTax:6.00,healthIdx:75,crimeIdx:60,anchor:"Washington",vaCount:1,climate:"Humid subtropical",type:"state"},
+  FL:{n:"Florida",      tax:"none", col:101,prop:0.91,vex:"100%",salesTax:7.02,healthIdx:68,crimeIdx:50,anchor:"Tampa",vaCount:7,climate:"Tropical/subtropical, hurricane risk",type:"state"},
+  GA:{n:"Georgia",      tax:"part", col:91, prop:0.81,vex:"part",salesTax:7.40,healthIdx:65,crimeIdx:50,anchor:"Atlanta",vaCount:4,climate:"Humid subtropical",type:"state"},
+  HI:{n:"Hawaii",       tax:"full", col:188,prop:0.27,vex:"100%",salesTax:4.50,healthIdx:92,crimeIdx:35,anchor:"Honolulu",vaCount:1,climate:"Tropical, mild year-round",type:"state"},
+  ID:{n:"Idaho",        tax:"part", col:95, prop:0.62,vex:"part",salesTax:6.03,healthIdx:70,crimeIdx:33,anchor:"Boise",vaCount:1,climate:"Continental mountain, cold winters",type:"state"},
+  IL:{n:"Illinois",     tax:"full", col:99, prop:2.07,vex:"100%",salesTax:8.85,healthIdx:70,crimeIdx:50,anchor:"Chicago",vaCount:5,climate:"Continental, cold winters humid summers",type:"state"},
+  IN:{n:"Indiana",      tax:"full", col:91, prop:0.82,vex:"part",salesTax:7.00,healthIdx:65,crimeIdx:48,anchor:"Indianapolis",vaCount:3,climate:"Humid continental",type:"state"},
+  IA:{n:"Iowa",         tax:"full", col:90, prop:1.43,vex:"100%",salesTax:6.94,healthIdx:73,crimeIdx:38,anchor:"Des Moines",vaCount:2,climate:"Humid continental, severe weather",type:"state"},
+  KS:{n:"Kansas",       tax:"full", col:87, prop:1.34,vex:"part",salesTax:8.66,healthIdx:68,crimeIdx:48,anchor:"Wichita",vaCount:2,climate:"Continental, tornado alley",type:"state"},
+  KY:{n:"Kentucky",     tax:"part", col:92, prop:0.78,vex:"part",salesTax:6.00,healthIdx:60,crimeIdx:40,anchor:"Louisville",vaCount:2,climate:"Humid continental",type:"state"},
+  LA:{n:"Louisiana",    tax:"full", col:91, prop:0.55,vex:"100%",salesTax:9.55,healthIdx:53,crimeIdx:65,anchor:"New Orleans",vaCount:2,climate:"Humid subtropical, hurricane risk",type:"state"},
+  ME:{n:"Maine",        tax:"full", col:105,prop:1.06,vex:"part",salesTax:5.50,healthIdx:77,crimeIdx:26,anchor:"Portland",vaCount:1,climate:"Humid continental, very cold winters",type:"state"},
+  MD:{n:"Maryland",     tax:"part", col:116,prop:1.05,vex:"100%",salesTax:6.00,healthIdx:80,crimeIdx:53,anchor:"Baltimore",vaCount:2,climate:"Humid continental/subtropical",type:"state"},
+  MA:{n:"Massachusetts",tax:"full", col:148,prop:1.04,vex:"part",salesTax:6.25,healthIdx:90,crimeIdx:32,anchor:"Boston",vaCount:3,climate:"Humid continental, snowy winters",type:"state"},
+  MI:{n:"Michigan",     tax:"full", col:90, prop:1.38,vex:"100%",salesTax:6.00,healthIdx:70,crimeIdx:50,anchor:"Detroit",vaCount:4,climate:"Humid continental, snowy",type:"state"},
+  MN:{n:"Minnesota",    tax:"full", col:103,prop:1.05,vex:"part",salesTax:7.50,healthIdx:84,crimeIdx:38,anchor:"Minneapolis",vaCount:2,climate:"Continental, very cold winters",type:"state"},
+  MS:{n:"Mississippi",  tax:"full", col:86, prop:0.79,vex:"none",salesTax:7.07,healthIdx:53,crimeIdx:55,anchor:"Jackson",vaCount:2,climate:"Humid subtropical",type:"state"},
+  MO:{n:"Missouri",     tax:"full", col:88, prop:0.88,vex:"part",salesTax:8.39,healthIdx:65,crimeIdx:56,anchor:"Kansas City",vaCount:3,climate:"Humid continental",type:"state"},
+  MT:{n:"Montana",      tax:"taxed",col:95, prop:0.74,vex:"part",salesTax:0,   healthIdx:70,crimeIdx:38,anchor:"Billings",vaCount:1,climate:"Continental mountain, cold winters",type:"state"},
+  NE:{n:"Nebraska",     tax:"full", col:90, prop:1.54,vex:"none",salesTax:6.97,healthIdx:75,crimeIdx:38,anchor:"Omaha",vaCount:1,climate:"Continental, severe weather",type:"state"},
+  NV:{n:"Nevada",       tax:"none", col:102,prop:0.55,vex:"part",salesTax:8.24,healthIdx:64,crimeIdx:55,anchor:"Las Vegas",vaCount:1,climate:"Desert, hot summers mild winters",type:"state"},
+  NH:{n:"New Hampshire",tax:"none", col:106,prop:1.93,vex:"part",salesTax:0,   healthIdx:85,crimeIdx:25,anchor:"Manchester",vaCount:1,climate:"Humid continental, snowy winters",type:"state"},
+  NJ:{n:"New Jersey",   tax:"full", col:111,prop:2.23,vex:"100%",salesTax:6.61,healthIdx:82,crimeIdx:32,anchor:"Newark",vaCount:3,climate:"Humid continental/subtropical",type:"state"},
+  NM:{n:"New Mexico",   tax:"part", col:93, prop:0.78,vex:"part",salesTax:7.84,healthIdx:65,crimeIdx:60,anchor:"Albuquerque",vaCount:1,climate:"Arid/semi-arid, mild winters",type:"state"},
+  NY:{n:"New York",     tax:"full", col:134,prop:1.40,vex:"part",salesTax:8.53,healthIdx:78,crimeIdx:50,anchor:"New York City",vaCount:6,climate:"Humid continental, snowy winters",type:"state"},
+  NC:{n:"North Carolina",tax:"full",col:96, prop:0.77,vex:"part",salesTax:6.99,healthIdx:70,crimeIdx:48,anchor:"Charlotte",vaCount:4,climate:"Humid subtropical",type:"state"},
+  ND:{n:"North Dakota", tax:"full", col:93, prop:0.89,vex:"part",salesTax:6.97,healthIdx:73,crimeIdx:35,anchor:"Fargo",vaCount:1,climate:"Continental, brutal winters",type:"state"},
+  OH:{n:"Ohio",         tax:"full", col:92, prop:1.41,vex:"part",salesTax:7.24,healthIdx:67,crimeIdx:48,anchor:"Columbus",vaCount:4,climate:"Humid continental",type:"state"},
+  OK:{n:"Oklahoma",     tax:"part", col:86, prop:0.89,vex:"100%",salesTax:8.99,healthIdx:55,crimeIdx:55,anchor:"Oklahoma City",vaCount:2,climate:"Humid subtropical, tornado risk",type:"state"},
+  OR:{n:"Oregon",       tax:"part", col:115,prop:0.86,vex:"part",salesTax:0,   healthIdx:76,crimeIdx:52,anchor:"Portland",vaCount:2,climate:"Marine West Coast, mild wet winters",type:"state"},
+  PA:{n:"Pennsylvania", tax:"full", col:96, prop:1.41,vex:"100%",salesTax:6.34,healthIdx:72,crimeIdx:37,anchor:"Philadelphia",vaCount:6,climate:"Humid continental",type:"state"},
+  RI:{n:"Rhode Island", tax:"taxed",col:107,prop:1.30,vex:"part",salesTax:7.00,healthIdx:78,crimeIdx:34,anchor:"Providence",vaCount:1,climate:"Humid continental, snowy winters",type:"state"},
+  SC:{n:"South Carolina",tax:"part",col:95, prop:0.55,vex:"100%",salesTax:7.50,healthIdx:64,crimeIdx:53,anchor:"Charleston",vaCount:2,climate:"Humid subtropical, mild winters",type:"state"},
+  SD:{n:"South Dakota", tax:"none", col:90, prop:1.14,vex:"100%",salesTax:6.40,healthIdx:72,crimeIdx:38,anchor:"Sioux Falls",vaCount:2,climate:"Continental, severe weather",type:"state"},
+  TN:{n:"Tennessee",    tax:"none", col:89, prop:0.66,vex:"part",salesTax:9.55,healthIdx:62,crimeIdx:55,anchor:"Nashville",vaCount:4,climate:"Humid subtropical",type:"state"},
+  TX:{n:"Texas",        tax:"none", col:92, prop:1.60,vex:"100%",salesTax:8.20,healthIdx:65,crimeIdx:48,anchor:"San Antonio",vaCount:7,climate:"Varies: humid east, arid west, hurricane gulf",type:"state"},
+  UT:{n:"Utah",         tax:"full", col:95, prop:0.58,vex:"part",salesTax:7.27,healthIdx:80,crimeIdx:35,anchor:"Salt Lake City",vaCount:1,climate:"Semi-arid mountain, four seasons",type:"state"},
+  VT:{n:"Vermont",      tax:"taxed",col:109,prop:1.83,vex:"part",salesTax:6.36,healthIdx:84,crimeIdx:28,anchor:"Burlington",vaCount:1,climate:"Humid continental, very cold winters",type:"state"},
+  VA:{n:"Virginia",     tax:"part", col:100,prop:0.86,vex:"100%",salesTax:5.77,healthIdx:76,crimeIdx:38,anchor:"Richmond",vaCount:4,climate:"Humid subtropical",type:"state"},
+  WA:{n:"Washington",   tax:"none", col:114,prop:0.87,vex:"part",salesTax:9.40,healthIdx:83,crimeIdx:50,anchor:"Seattle",vaCount:2,climate:"Marine West Coast, mild wet winters",type:"state"},
+  WV:{n:"West Virginia",tax:"part", col:87, prop:0.54,vex:"part",salesTax:6.55,healthIdx:56,crimeIdx:42,anchor:"Charleston",vaCount:1,climate:"Humid continental",type:"state"},
+  WI:{n:"Wisconsin",    tax:"full", col:95, prop:1.51,vex:"part",salesTax:5.43,healthIdx:78,crimeIdx:40,anchor:"Milwaukee",vaCount:2,climate:"Humid continental, cold winters",type:"state"},
+  WY:{n:"Wyoming",      tax:"none", col:91, prop:0.58,vex:"part",salesTax:5.44,healthIdx:68,crimeIdx:33,anchor:"Cheyenne",vaCount:1,climate:"Semi-arid, very cold winters",type:"state"},
 };
 
-// Top 20 expat retirement destinations
-// COL rebased: Numbeo 2026 country index ÷ US (68.8) × 100 → US avg = 100 baseline
-// tax = treaty status for US gov pensions; treaty = US-only taxation per treaty article
-// visa = primary long-stay/retirement option
-// Expat country codes prefixed to avoid collision with US state codes (CO/PA/MT)
+// Expat destinations with extended detail. v3.6 fields:
+// healthIdx: Numbeo Healthcare Index 2026 (0-100, higher better)
+// crimeIdx: Numbeo Crime Index 2026 (0-100, lower better)
+// rentIdx / groceriesIdx: Numbeo sub-indices rebased to US avg = 100
+// anchor: representative city for cost-of-living and lifestyle reference
+// english: rough English proficiency (Native / Very High / High / Moderate / Low)
+// residencyPath: difficulty to establish legal residency (Easy / Moderate / Difficult)
+// climate: short descriptor
+// Codes prefixed (ISO 3-letter) to avoid collision with US state codes
 const EXPATS = {
-  PRT:{n:"Portugal",     col:71,visa:"D7 Visa",        tax:"treaty",health:"excellent",note:"Non-Habitual Resident program ended 2024; standard rules apply.",type:"expat"},
-  MEX:{n:"Mexico",       col:62,visa:"Temporary Resident",tax:"treaty",health:"variable",note:"Largest US expat community. Common destinations: San Miguel, Merida, Mazatlan.",type:"expat"},
-  PAN:{n:"Panama",       col:66,visa:"Pensionado",     tax:"none",   health:"good",     note:"Dollarized economy. Pensionado discounts on flights, medical, utilities.",type:"expat"},
-  CRI:{n:"Costa Rica",   col:77,visa:"Pensionado",     tax:"treaty",health:"good",     note:"Stable democracy. Universal healthcare available to residents.",type:"expat"},
-  ESP:{n:"Spain",        col:75,visa:"Non-Lucrative",  tax:"treaty",health:"excellent",note:"Cannot work on this visa. World-class public health system.",type:"expat"},
-  ITA:{n:"Italy",        col:89,visa:"Elective Residence",tax:"treaty",health:"excellent",note:"7% flat tax for foreign pensions in qualifying southern towns.",type:"expat"},
-  ECU:{n:"Ecuador",      col:45,visa:"Pensionado",     tax:"treaty",health:"basic",    note:"Dollarized. Cheapest mainstream destination. Altitude in major cities.",type:"expat"},
-  COL:{n:"Colombia",     col:46,visa:"M Pensionado",   tax:"treaty",health:"good",     note:"Medellín and Bogotá have excellent private hospitals. Spanish required outside expat zones.",type:"expat"},
-  BLZ:{n:"Belize",       col:68,visa:"QRP Program",    tax:"none",   health:"limited",  note:"English-speaking. Tax-free Qualified Retired Persons program.",type:"expat"},
-  MYS:{n:"Malaysia",     col:49,visa:"MM2H",           tax:"treaty",health:"excellent",note:"Malaysia My Second Home program. Tier-1 hospitals in Kuala Lumpur and Penang.",type:"expat"},
-  THA:{n:"Thailand",     col:55,visa:"Retirement O-A", tax:"limited",health:"good",     note:"Visa requires $25K bank deposit. Tax treaty limited for pensions.",type:"expat"},
-  PHL:{n:"Philippines",  col:44,visa:"SRRV",           tax:"treaty",health:"variable", note:"Only foreign VA outpatient clinic (Manila). English widely spoken.",type:"expat"},
-  GRC:{n:"Greece",       col:78,visa:"Financially Independent Person",tax:"treaty",health:"good",note:"7% flat tax for first 15 years for foreign retirees.",type:"expat"},
-  MLT:{n:"Malta",        col:83,visa:"Retirement Programme",tax:"treaty",health:"excellent",note:"EU member. English is official language alongside Maltese.",type:"expat"},
-  CYP:{n:"Cyprus",       col:85,visa:"Permanent Residence",tax:"treaty",health:"good",note:"Pension taxed at 5% above modest threshold. EU member.",type:"expat"},
-  VNM:{n:"Vietnam",      col:38,visa:"3-month Tourist",tax:"limited",health:"basic",   note:"No formal retirement visa. Tourist visa renewable. Very low cost.",type:"expat"},
-  CZE:{n:"Czech Republic",col:77,visa:"Long-Term Residence",tax:"treaty",health:"good",note:"EU. Very safe. Prague is most popular destination.",type:"expat"},
-  URY:{n:"Uruguay",      col:81,visa:"Residence Permit",tax:"treaty",health:"good",    note:"South America's most stable democracy. Small expat scene.",type:"expat"},
-  DOM:{n:"Dominican Republic",col:56,visa:"Pensionado",tax:"treaty",health:"variable",note:"Coastal expat communities. English limited outside resorts.",type:"expat"},
-  TUR:{n:"Turkey",       col:57,visa:"Touristic Residence",tax:"treaty",health:"variable",note:"Cheap. Bodrum and Antalya popular with retirees. Political volatility.",type:"expat"},
-  IRL:{n:"Ireland",      col:103,visa:"Stamp 0",         tax:"treaty",health:"good",     note:"English-speaking. US pensions taxable only in US per treaty. High cost.",type:"expat"},
-  GBR:{n:"UK / Scotland",col:99, visa:"6-month tourist", tax:"treaty",health:"good",     note:"No retirement visa; long-stay options limited. Scotland 20-30% cheaper than London.",type:"expat"},
-  NLD:{n:"Netherlands",  col:107,visa:"DAFT (entrepreneur)",tax:"treaty",health:"excellent",note:"No formal retirement visa. DAFT requires business. Bike infrastructure unmatched.",type:"expat"},
-  FRA:{n:"France",       col:98, visa:"Long-Stay Visitor",tax:"treaty",health:"excellent",note:"US gov pensions taxable only in US. Healthcare among best in world.",type:"expat"},
-  AUS:{n:"Australia",    col:99, visa:"Visitor / Parent Stream",tax:"treaty",health:"excellent",note:"Retirement visas largely closed to new applicants. Tax treaty protects US gov pensions. High cost.",type:"expat"},
-  PRI:{n:"Puerto Rico",  col:91, visa:"US territory · no visa",tax:"territory",health:"good",note:"No visa required for US citizens. US federal tax still applies to military pension. Puerto Rico has its own territorial tax for residents.",type:"expat"},
+  PRT:{n:"Portugal",     col:71, visa:"D7 Visa",              tax:"treaty",  health:"excellent",healthIdx:72.0,crimeIdx:33.0,rentIdx:62, groceriesIdx:63, anchor:"Lisbon",       english:"Very High",residencyPath:"Easy",     climate:"Mediterranean",                       note:"Non-Habitual Resident program ended 2024; standard rules apply.",type:"expat"},
+  MEX:{n:"Mexico",       col:62, visa:"Temporary Resident",   tax:"treaty",  health:"variable", healthIdx:72.3,crimeIdx:52.9,rentIdx:44, groceriesIdx:63, anchor:"Mérida",       english:"Moderate", residencyPath:"Easy",     climate:"Varies: tropical S, temperate central",note:"Largest US expat community. Common destinations: San Miguel, Mérida, Mazatlán.",type:"expat"},
+  PAN:{n:"Panama",       col:66, visa:"Pensionado",           tax:"none",    health:"good",     healthIdx:61.2,crimeIdx:42.8,rentIdx:57, groceriesIdx:69, anchor:"Panama City",  english:"Moderate", residencyPath:"Easy",     climate:"Tropical, hot year-round",            note:"Dollarized economy. Pensionado discounts on flights, medical, utilities.",type:"expat"},
+  CRI:{n:"Costa Rica",   col:77, visa:"Pensionado",           tax:"treaty",  health:"good",     healthIdx:64.8,crimeIdx:53.9,rentIdx:50, groceriesIdx:80, anchor:"San José",     english:"Moderate", residencyPath:"Easy",     climate:"Tropical, temperate highlands",       note:"Stable democracy. Universal healthcare (Caja) available to residents.",type:"expat"},
+  ESP:{n:"Spain",        col:75, visa:"Non-Lucrative",        tax:"treaty",  health:"excellent",healthIdx:77.2,crimeIdx:37.6,rentIdx:57, groceriesIdx:68, anchor:"Valencia",     english:"Moderate", residencyPath:"Moderate", climate:"Mediterranean coast, continental interior", note:"Cannot work on this visa. World-class public health system.",type:"expat"},
+  ITA:{n:"Italy",        col:89, visa:"Elective Residence",   tax:"treaty",  health:"excellent",healthIdx:64.9,crimeIdx:47.3,rentIdx:50, groceriesIdx:85, anchor:"Rome",         english:"Moderate", residencyPath:"Moderate", climate:"Mediterranean coast, alpine north",   note:"7% flat tax for foreign pensions in qualifying southern towns.",type:"expat"},
+  ECU:{n:"Ecuador",      col:45, visa:"Pensionado",           tax:"treaty",  health:"basic",    healthIdx:77.7,crimeIdx:61.9,rentIdx:21, groceriesIdx:46, anchor:"Cuenca",       english:"Low",      residencyPath:"Easy",     climate:"Tropical lowlands, temperate highlands",note:"Dollarized. Cheapest mainstream destination. Altitude in major cities.",type:"expat"},
+  COL:{n:"Colombia",     col:46, visa:"M Pensionado",         tax:"treaty",  health:"good",     healthIdx:68.9,crimeIdx:61.3,rentIdx:27, groceriesIdx:44, anchor:"Medellín",     english:"Low",      residencyPath:"Easy",     climate:"Tropical lowlands, mountain springlike",note:"Medellín and Bogotá have excellent private hospitals. Spanish required outside expat zones.",type:"expat"},
+  BLZ:{n:"Belize",       col:68, visa:"QRP Program",          tax:"none",    health:"limited",  healthIdx:50.0,crimeIdx:51.8,rentIdx:33, groceriesIdx:71, anchor:"San Pedro",    english:"Native",   residencyPath:"Easy",     climate:"Tropical, hurricane risk",            note:"English-speaking. Tax-free Qualified Retired Persons program.",type:"expat"},
+  MYS:{n:"Malaysia",     col:49, visa:"MM2H",                 tax:"treaty",  health:"excellent",healthIdx:70.7,crimeIdx:48.0,rentIdx:23, groceriesIdx:57, anchor:"Penang",       english:"High",     residencyPath:"Moderate", climate:"Tropical, hot and humid",             note:"Malaysia My Second Home program. Tier-1 hospitals in Kuala Lumpur and Penang.",type:"expat"},
+  THA:{n:"Thailand",     col:55, visa:"Retirement O-A",       tax:"limited", health:"good",     healthIdx:77.5,crimeIdx:36.6,rentIdx:34, groceriesIdx:60, anchor:"Chiang Mai",   english:"Low",      residencyPath:"Easy",     climate:"Tropical",                            note:"Visa requires $25K bank deposit. Tax treaty limited for pensions.",type:"expat"},
+  PHL:{n:"Philippines",  col:44, visa:"SRRV",                 tax:"treaty",  health:"variable", healthIdx:66.8,crimeIdx:43.5,rentIdx:19, groceriesIdx:48, anchor:"Cebu",         english:"Very High",residencyPath:"Easy",     climate:"Tropical, typhoon risk",              note:"Only foreign VA outpatient clinic (Manila). English widely spoken.",type:"expat"},
+  GRC:{n:"Greece",       col:78, visa:"Financially Independent Person",tax:"treaty",health:"good",healthIdx:58.9,crimeIdx:46.2,rentIdx:34, groceriesIdx:69, anchor:"Athens",       english:"Very High",residencyPath:"Moderate", climate:"Mediterranean",                       note:"7% flat tax for first 15 years for foreign retirees.",type:"expat"},
+  MLT:{n:"Malta",        col:83, visa:"Retirement Programme", tax:"treaty",  health:"excellent",healthIdx:53.3,crimeIdx:43.0,rentIdx:69, groceriesIdx:76, anchor:"Valletta",     english:"Native",   residencyPath:"Moderate", climate:"Mediterranean",                       note:"EU member. English is official language alongside Maltese.",type:"expat"},
+  CYP:{n:"Cyprus",       col:85, visa:"Permanent Residence",  tax:"treaty",  health:"good",     healthIdx:56.7,crimeIdx:33.3,rentIdx:66, groceriesIdx:74, anchor:"Larnaca",      english:"High",     residencyPath:"Moderate", climate:"Mediterranean",                       note:"Pension taxed at 5% above modest threshold. EU member.",type:"expat"},
+  VNM:{n:"Vietnam",      col:38, visa:"3-month Tourist",      tax:"limited", health:"basic",    healthIdx:62.2,crimeIdx:40.1,rentIdx:24, groceriesIdx:43, anchor:"Ho Chi Minh",  english:"Low",      residencyPath:"Difficult",climate:"Tropical",                            note:"No formal retirement visa. Tourist visa renewable. Very low cost.",type:"expat"},
+  CZE:{n:"Czech Republic",col:77,visa:"Long-Term Residence",  tax:"treaty",  health:"good",     healthIdx:76.0,crimeIdx:26.4,rentIdx:51, groceriesIdx:68, anchor:"Prague",       english:"High",     residencyPath:"Moderate", climate:"Continental, cold winters",           note:"EU. Very safe. Prague is most popular destination.",type:"expat"},
+  URY:{n:"Uruguay",      col:81, visa:"Residence Permit",     tax:"treaty",  health:"good",     healthIdx:68.5,crimeIdx:52.5,rentIdx:36, groceriesIdx:74, anchor:"Montevideo",   english:"Moderate", residencyPath:"Easy",     climate:"Temperate, four seasons",             note:"South America's most stable democracy. Small expat scene.",type:"expat"},
+  DOM:{n:"Dominican Republic",col:56,visa:"Pensionado",       tax:"treaty",  health:"variable", healthIdx:58.4,crimeIdx:60.0,rentIdx:34, groceriesIdx:53, anchor:"Punta Cana",   english:"Low",      residencyPath:"Easy",     climate:"Tropical, hurricane risk",            note:"Coastal expat communities. English limited outside resorts.",type:"expat"},
+  TUR:{n:"Turkey",       col:57, visa:"Touristic Residence",  tax:"treaty",  health:"variable", healthIdx:71.3,crimeIdx:41.5,rentIdx:33, groceriesIdx:53, anchor:"Antalya",      english:"Low",      residencyPath:"Easy",     climate:"Mediterranean coast, continental interior",note:"Cheap. Bodrum and Antalya popular with retirees. Political volatility.",type:"expat"},
+  IRL:{n:"Ireland",      col:103,visa:"Stamp 0",              tax:"treaty",  health:"good",     healthIdx:51.2,crimeIdx:49.0,rentIdx:108,groceriesIdx:93, anchor:"Dublin",       english:"Native",   residencyPath:"Moderate", climate:"Temperate maritime, wet",             note:"English-speaking. US pensions taxable only in US per treaty. High cost, especially rent.",type:"expat"},
+  GBR:{n:"UK / Scotland",col:99, visa:"6-month tourist",      tax:"treaty",  health:"good",     healthIdx:72.7,crimeIdx:48.3,rentIdx:79, groceriesIdx:85, anchor:"Edinburgh",    english:"Native",   residencyPath:"Difficult",climate:"Temperate maritime",                  note:"No retirement visa; long-stay options limited. Scotland 20-30% cheaper than London.",type:"expat"},
+  NLD:{n:"Netherlands",  col:107,visa:"DAFT (entrepreneur)",  tax:"treaty",  health:"excellent",healthIdx:81.5,crimeIdx:25.5,rentIdx:95, groceriesIdx:90, anchor:"Amsterdam",    english:"Very High",residencyPath:"Difficult",climate:"Temperate maritime",                  note:"No formal retirement visa. DAFT requires business. Bike infrastructure unmatched.",type:"expat"},
+  FRA:{n:"France",       col:98, visa:"Long-Stay Visitor",    tax:"treaty",  health:"excellent",healthIdx:77.0,crimeIdx:55.8,rentIdx:55, groceriesIdx:99, anchor:"Bordeaux",     english:"Moderate", residencyPath:"Easy",     climate:"Temperate Atlantic, Mediterranean south",note:"US gov pensions taxable only in US. Healthcare among best in world.",type:"expat"},
+  AUS:{n:"Australia",    col:99, visa:"Visitor / Parent Stream",tax:"treaty",health:"excellent",healthIdx:72.0,crimeIdx:47.5,rentIdx:83, groceriesIdx:103,anchor:"Brisbane",     english:"Native",   residencyPath:"Difficult",climate:"Varies: temperate to tropical",       note:"Retirement visas largely closed to new applicants. Tax treaty protects US gov pensions. High cost.",type:"expat"},
+  PRI:{n:"Puerto Rico",  col:91, visa:"US territory · no visa",tax:"territory",health:"good",   healthIdx:59.1,crimeIdx:61.4,rentIdx:53, groceriesIdx:91, anchor:"San Juan",     english:"High",     residencyPath:"Easy",     climate:"Tropical, hurricane risk",            note:"No visa required for US citizens. US federal tax still applies to military pension. Puerto Rico has its own territorial tax for residents.",type:"expat"},
 };
 
 const COLA_RATIOS=[1,1,1,0.56,0.56,0.56,0.08,0.08,0.08,0,0,0];
@@ -735,6 +798,7 @@ function App(){
   // Location comparison (mix states + expats)
   const [homeLocation,setHomeLocation]=useState("VA");
   const [compareLocations,setCompareLocations]=useState(["TX","PRT","PHL"]);
+  const [expandedLocation,setExpandedLocation]=useState(null); // location code currently showing detail
 
   // Manual override of fed tax (advanced)
   const [fedTaxOverride,setFedTaxOverride]=useState(null);
@@ -1119,7 +1183,7 @@ function App(){
             <div className="section-meta">US states + 20 expat destinations · COL-adjusted</div>
           </div>
           <p className="section-lede">
-            Same pension, four different places to live. Bars show monthly buying power: your net retired pay divided by local cost of living. Where you live can swing your effective retirement by 30-50% domestically, and much more abroad. <Conf level="low"/> indicates expat cost of living and tax treatment carry the most uncertainty.
+            Same pension, multiple places to live. Bars show monthly buying power: your net retired pay (minus property tax) divided by local cost of living. Where you live can swing your effective retirement by 30-50% domestically, and much more abroad. <b>Click a location name</b> to expand healthcare quality, crime, residency path, climate, and other detail. <Conf level="low"/> indicates expat cost of living and tax treatment carry the most uncertainty.
           </p>
 
           <div className="surface" style={{marginBottom:18}}>
@@ -1134,21 +1198,27 @@ function App(){
               const max=Math.max(...calc.compareCalcs.map(c=>c.buyingPower));
               const leader=s.code===calc.bestLocation.code;
               const isHome=s.code===homeLocation;
+              const expanded=expandedLocation===s.code;
               return(
-                <div key={s.code} className={`shoot-row ${leader?"leader":""}`}>
-                  <div className="shoot-state">
+                <div key={s.code} className={`shoot-row ${leader?"leader":""} ${expanded?"expanded":""}`}>
+                  <button type="button" className="shoot-state shoot-toggle"
+                    aria-expanded={expanded}
+                    aria-controls={`detail-${s.code}`}
+                    onClick={()=>setExpandedLocation(expanded?null:s.code)}
+                    title={expanded?"Hide detail":"Show detail"}>
+                    <span className="shoot-caret" aria-hidden="true">{expanded?"▾":"▸"}</span>
                     {s.name}
                     {s.isExpat&&<span style={{fontSize:10,padding:"2px 6px",background:"rgba(90,122,138,0.18)",borderRadius:99,color:"var(--info)",fontWeight:500}}>EXPAT</span>}
                     {isHome&&<span style={{fontSize:10,padding:"2px 6px",background:"var(--surface-3)",borderRadius:99,color:"var(--ink-3)",fontWeight:500}}>HOME</span>}
                     {leader&&!isHome&&<span style={{fontSize:10,padding:"2px 6px",background:"var(--accent-soft)",borderRadius:99,color:"var(--accent)",fontWeight:600}}>BEST</span>}
-                  </div>
+                  </button>
                   <div className="shoot-bar">
                     <div className="shoot-bar-fill" style={{width:`${(s.buyingPower/max)*100}%`}}/>
                   </div>
                   <div className="shoot-val num">{fmt(s.buyingPower)}/mo</div>
                   <div className="shoot-detail">
                     <div>Net pay <b className="num">{fmt(s.netTotal)}</b></div>
-                    <div>COL index <b>{s.col}</b></div>
+                    <div>Cost-of-living <b>{s.col}</b></div>
                     <div>{s.isExpat?"US state tax":"Pension tax"} <b>{s.stateTaxNote}</b></div>
                     {s.isExpat
                       ?<div>Visa <b style={{fontSize:11}}>{s.loc.visa}</b></div>
@@ -1158,10 +1228,8 @@ function App(){
                       :<div>Prop tax <b className="num">{fmt(s.propTaxAnnual)}/yr</b></div>}
                     <div>{s.isExpat?"Healthcare":"Sales tax"} <b>{s.isExpat?s.loc.health:s.loc.salesTax.toFixed(1)+"%"}</b></div>
                   </div>
-                  {s.isExpat&&(
-                    <div style={{gridColumn:"1/-1",fontSize:11.5,color:"var(--ink-3)",lineHeight:1.5,marginTop:-4}}>
-                      {s.loc.note}
-                    </div>
+                  {expanded&&(
+                    <LocationDetailCard id={`detail-${s.code}`} s={s} vaRating={vaRating}/>
                   )}
                 </div>
               );
@@ -1605,8 +1673,8 @@ function App(){
         </section>
 
         <footer className="footer">
-          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.5.1 · A planning instrument for service members.</div>
-          Official retirement pay is determined by Defense Finance and Accounting Service (DFAS) based on your actual record. VA rates reflect 2026 (2.8% Cost of Living Adjustment, effective Dec 1 2025). Federal tax brackets per IRS Rev. Proc. 2025-32. State cost of living indices rebased from C2ER 2025. Expat cost of living from Numbeo 2026. Tax treaty status is general; consult a tax professional for your specific situation. Property tax effective rates from Tax Foundation 2025. CRDP/CRSC, REDUX age-62 catch-up, and BRS lump sum are simplified models. Built in conversation with Claude. Verify with your retirement services office and a tax professional before locking in a date.
+          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.6 · A planning instrument for service members.</div>
+          Official retirement pay is determined by Defense Finance and Accounting Service (DFAS) based on your actual record. VA rates reflect 2026 (2.8% Cost of Living Adjustment, effective Dec 1 2025). Federal tax brackets per IRS Rev. Proc. 2025-32. State cost of living indices rebased from C2ER 2025. Expat cost of living, healthcare, and crime indices from Numbeo 2026 (crowdsourced). US state healthcare quality from US News &amp; World Report 2024-25 rankings. US state crime indices derived from FBI UCR 2024. English proficiency from EF EPI 2024. Property tax effective rates from Tax Foundation 2025. Tax treaty status is general; consult a tax professional for your specific situation. CRDP/CRSC, REDUX age-62 catch-up, and BRS lump sum are simplified models. Built in conversation with Claude. Verify with your retirement services office and a tax professional before locking in a date.
         </footer>
       </div>
 
@@ -1726,7 +1794,7 @@ function PrintMemo(props){
           Military Pension Studio
         </div>
         <div className="pm-title">Retirement Decision Memo</div>
-        <div className="pm-meta">Generated {dateStr} · v3.5.1</div>
+        <div className="pm-meta">Generated {dateStr} · v3.6</div>
       </div>
 
       <div className="pm-identity">
@@ -1993,7 +2061,7 @@ function Topbar(){
           <span className="brand-name">Military Pension Studio</span>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.5.1</span>
+          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.6</span>
         </div>
       </div>
     </div>
@@ -2034,6 +2102,103 @@ function LearnBlock({title,children}){
 function Conf({level}){
   const labels={high:"High",medium:"Med",low:"Low"};
   return <span className={`conf ${level}`} title={`${labels[level]} confidence`}>{labels[level]}</span>;
+}
+
+// Renders a deep-dive panel inside a shootout row when expanded.
+// Healthcare and crime indices use Numbeo (2026); US state values are USNews 2024-25
+// state health ranking + FBI UCR-derived crime indices, normalized to roughly the
+// same 0-100 scale (US country averages: health ~67, crime ~49).
+function LocationDetailCard({id,s,vaRating}){
+  const loc=s.loc;
+  const healthVsUS=loc.healthIdx?((loc.healthIdx-67)/67*100).toFixed(0):null;
+  const crimeVsUS=loc.crimeIdx?((loc.crimeIdx-49.2)/49.2*100).toFixed(0):null;
+  const isExpat=s.isExpat;
+  return(
+    <div id={id} className="shoot-detail-card" role="region" aria-label={`Detail for ${s.name}`}>
+      <div className="ldc-grid">
+        {/* Anchor + climate */}
+        <div className="ldc-cell">
+          <div className="ldc-label">Anchor reference</div>
+          <div className="ldc-value">{loc.anchor||"—"}</div>
+          <div className="ldc-sub">{loc.climate||""}</div>
+        </div>
+
+        {/* Healthcare */}
+        <div className="ldc-cell">
+          <div className="ldc-label">Healthcare quality <Conf level={isExpat?"medium":"low"}/></div>
+          <div className="ldc-value">
+            <span className="num">{loc.healthIdx?loc.healthIdx.toFixed(1):"—"}</span>
+            <span className="ldc-bar"><span className="ldc-bar-fill" style={{width:`${Math.min(100,(loc.healthIdx||0))}%`,background:loc.healthIdx>=70?"var(--pos)":loc.healthIdx>=55?"var(--accent)":"var(--neg)"}}/></span>
+          </div>
+          <div className="ldc-sub">{healthVsUS?(healthVsUS>0?"+":"")+healthVsUS+"% vs US (67)":""} · {isExpat?"Numbeo 2026":"USNews 2024-25"}</div>
+        </div>
+
+        {/* Crime */}
+        <div className="ldc-cell">
+          <div className="ldc-label">Crime index <Conf level={isExpat?"medium":"low"}/></div>
+          <div className="ldc-value">
+            <span className="num">{loc.crimeIdx?loc.crimeIdx.toFixed(1):"—"}</span>
+            <span className="ldc-bar"><span className="ldc-bar-fill" style={{width:`${Math.min(100,(loc.crimeIdx||0))}%`,background:loc.crimeIdx<=35?"var(--pos)":loc.crimeIdx<=50?"var(--accent)":"var(--neg)"}}/></span>
+          </div>
+          <div className="ldc-sub">lower is safer · {crimeVsUS?(crimeVsUS>0?"+":"")+crimeVsUS+"% vs US (49)":""} · {isExpat?"Numbeo 2026":"FBI UCR derived"}</div>
+        </div>
+
+        {/* Expat-specific cells */}
+        {isExpat&&<>
+          <div className="ldc-cell">
+            <div className="ldc-label">Cost detail · rent</div>
+            <div className="ldc-value"><span className="num">{loc.rentIdx}</span> <span style={{fontSize:11,color:"var(--ink-3)"}}>vs US 100</span></div>
+            <div className="ldc-sub">groceries <b className="num">{loc.groceriesIdx}</b> · purchasing power varies by city</div>
+          </div>
+          <div className="ldc-cell">
+            <div className="ldc-label">English proficiency</div>
+            <div className="ldc-value">{loc.english||"—"}</div>
+            <div className="ldc-sub">EF EPI 2024 derived · Native = English official language</div>
+          </div>
+          <div className="ldc-cell">
+            <div className="ldc-label">Residency path</div>
+            <div className="ldc-value">{loc.residencyPath||"—"}</div>
+            <div className="ldc-sub">{loc.visa}</div>
+          </div>
+          <div className="ldc-cell">
+            <div className="ldc-label">US tax treaty status</div>
+            <div className="ldc-value">{loc.tax==="treaty"?"Protected":loc.tax==="limited"?"Limited":loc.tax==="territory"?"US territory":loc.tax==="none"?"No treaty":"—"}</div>
+            <div className="ldc-sub">US gov pensions {loc.tax==="treaty"?"taxable only by US under treaty article":loc.tax==="territory"?"federally taxed; territory may add":loc.tax==="none"?"may face local taxation":"varies by source/article"}</div>
+          </div>
+        </>}
+
+        {/* US state-specific cells */}
+        {!isExpat&&<>
+          <div className="ldc-cell">
+            <div className="ldc-label">VA medical facilities</div>
+            <div className="ldc-value"><span className="num">{loc.vaCount||0}</span> medical centers</div>
+            <div className="ldc-sub">plus regional outpatient clinics · va.gov/find-locations</div>
+          </div>
+          <div className="ldc-cell">
+            <div className="ldc-label">Property tax detail</div>
+            <div className="ldc-value"><span className="num">{loc.prop.toFixed(2)}%</span> effective rate</div>
+            <div className="ldc-sub">Disabled vet exemption: <b>{loc.vex==="100%"?"full at 100% rating":loc.vex==="part"?"partial · varies by rating":"none / minimal"}</b></div>
+          </div>
+          <div className="ldc-cell">
+            <div className="ldc-label">Sales tax (combined)</div>
+            <div className="ldc-value"><span className="num">{loc.salesTax.toFixed(2)}%</span></div>
+            <div className="ldc-sub">state + average local · groceries/medicine vary</div>
+          </div>
+          <div className="ldc-cell">
+            <div className="ldc-label">State tax on pension</div>
+            <div className="ldc-value">{loc.tax==="none"?"No state income tax":loc.tax==="full"?"Fully exempt":loc.tax==="part"?"Partial exemption":"Taxed as income"}</div>
+            <div className="ldc-sub">military retirement specifically · {loc.tax==="taxed"?"plan for state tax impact":"favorable"}</div>
+          </div>
+        </>}
+      </div>
+
+      {loc.note&&(
+        <div className="ldc-note">
+          <b>Note:</b> {loc.note}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function Decomposition({calc}){
