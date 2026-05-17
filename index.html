@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Military Pension Studio v3.7.1 · A retirement instrument for service members</title>
+<title>Military Pension Studio v3.7.2 · A retirement instrument for service members</title>
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -506,7 +506,7 @@ const FED_STD_DEDUCTION_2026 = {single:16100, mfj:32200};
 
 // US States: tax treatment + COL index + property tax + disabled vet exemption + sales tax
 // COL index baseline: US average = 100 (rebased from C2ER 2025)
-// US States with extended detail. New v3.7.1 fields:
+// US States with extended detail. New v3.7.2 fields:
 // healthIdx: US News & World Report 2024-25 state health ranking, approx 0-100 (higher better)
 // crimeIdx: FBI UCR 2024 derived approx 0-100 (lower better)
 // anchor: representative city for cost-of-living and climate
@@ -566,7 +566,7 @@ const STATES = {
   WY:{n:"Wyoming",      tax:"none", col:91, prop:0.58,vex:"part",salesTax:5.44,healthIdx:68,crimeIdx:33,anchor:"Cheyenne",vaCount:1,climate:"Semi-arid, very cold winters",type:"state"},
 };
 
-// Expat destinations with extended detail. v3.7.1 fields:
+// Expat destinations with extended detail. v3.7.2 fields:
 // healthIdx: Numbeo Healthcare Index 2026 (0-100, higher better)
 // crimeIdx: Numbeo Crime Index 2026 (0-100, lower better)
 // rentIdx / groceriesIdx: Numbeo sub-indices rebased to US avg = 100
@@ -793,8 +793,10 @@ function App(){
   const [rothSpouseBalance,setRothSpouseBalance]=useState(35000);
   const [rothMonthlyContrib,setRothMonthlyContrib]=useState(0); // combined monthly into both Roths
 
-  // Derived: current age computed from full birth date (accounts for whether birthday has passed)
-  // and years until retirement
+  // Derived: current age and accurate time-to-retirement.
+  // currentAge: integer age from birth date today.
+  // retirementDate: month 1 of (birthYear + retireAge). E.g., born Aug 1980 + retire at 50 + June = June 1, 2030.
+  // yearsToRetire: fractional years between today and retirement date (more accurate than integer age math).
   const today=new Date();
   const currentAge=useMemo(()=>{
     if(!birthDate)return 0;
@@ -805,7 +807,28 @@ function App(){
     if(monthDiff<0 || (monthDiff===0 && today.getDate()<b.getDate()))age--;
     return Math.max(0,age);
   },[birthDate]);
-  const yearsToRetire=useMemo(()=>Math.max(0,retireAge-currentAge),[retireAge,currentAge]);
+  const retirementDate=useMemo(()=>{
+    if(!birthDate)return today;
+    const b=new Date(birthDate);
+    if(isNaN(b.getTime()))return today;
+    // Year the person turns retireAge, in the retirement month (day 1).
+    const retireYear=b.getFullYear()+retireAge;
+    return new Date(retireYear,retireMonth,1);
+  },[birthDate,retireAge,retireMonth]);
+  const yearsToRetire=useMemo(()=>{
+    const ms=retirementDate.getTime()-today.getTime();
+    return Math.max(0, ms/(365.25*86400*1000));
+  },[retirementDate,today]);
+  // Formatter for "4 yrs 1 mo" style display
+  const fmtYearsMonths=yrs=>{
+    if(yrs<=0)return"0 yrs";
+    const wy=Math.floor(yrs);
+    const wm=Math.round((yrs-wy)*12);
+    if(wm===12)return`${wy+1} yrs`;
+    if(wm===0)return`${wy} yrs`;
+    if(wy===0)return`${wm} mo`;
+    return`${wy} yrs ${wm} mo`;
+  };
 
   // 2026 TSP contribution limits (Source: TSP Bulletin 25-3)
   // Standard: $24,500/yr ($2,042/mo)
@@ -1366,10 +1389,10 @@ function App(){
                 <div className="field">
                   <div className="field-label">
                     <span>Years until you retire</span>
-                    <span className="field-value">{yearsToRetire} yrs</span>
+                    <span className="field-value">{fmtYearsMonths(yearsToRetire)}</span>
                   </div>
                   <div className="field-help" style={{marginTop:4}}>
-                    Auto-computed from your birth date (current age {currentAge}) and retirement age ({retireAge}). Edit either in the inputs drawer.
+                    Auto-computed: retire {MONTHS[retireMonth]} {retirementDate.getFullYear()} (age {retireAge}, the year you turn {retireAge}). Current age {currentAge}. Change birth date, retire age, or retire month in the inputs drawer.
                   </div>
                 </div>
                 <div className="field">
@@ -1816,7 +1839,7 @@ function App(){
         </section>
 
         <footer className="footer">
-          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.7.1 · A planning instrument for service members.</div>
+          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.7.2 · A planning instrument for service members.</div>
           Official retirement pay is determined by Defense Finance and Accounting Service (DFAS) based on your actual record. VA rates reflect 2026 (2.8% Cost of Living Adjustment, effective Dec 1 2025). Federal tax brackets per IRS Rev. Proc. 2025-32. State cost of living indices rebased from C2ER 2025. Expat cost of living, healthcare, and crime indices from Numbeo 2026 (crowdsourced). US state healthcare quality from US News &amp; World Report 2024-25 rankings. US state crime indices derived from FBI UCR 2024. English proficiency from EF EPI 2024. Property tax effective rates from Tax Foundation 2025. Tax treaty status is general; consult a tax professional for your specific situation. CRDP/CRSC, REDUX age-62 catch-up, and BRS lump sum are simplified models. Built in conversation with Claude. Verify with your retirement services office and a tax professional before locking in a date.
         </footer>
       </div>
@@ -1946,7 +1969,7 @@ function PrintMemo(props){
           Military Pension Studio
         </div>
         <div className="pm-title">Retirement Decision Memo</div>
-        <div className="pm-meta">Generated {dateStr} · v3.7.1</div>
+        <div className="pm-meta">Generated {dateStr} · v3.7.2</div>
       </div>
 
       <div className="pm-identity">
@@ -2118,7 +2141,7 @@ function PrintMemo(props){
           <div className="pm-panel-title">
             Retirement portfolio · TSP + Roth IRA
             <span style={{float:"right",fontSize:8,color:"#666",fontWeight:500,letterSpacing:0,textTransform:"none"}}>
-              TSP {fmt(tspBalance)} + Roth {fmt(calc.rothCombinedNow)} today · {yearsToRetire} yr · {tspGrowth.toFixed(1)}% growth
+              TSP {fmt(tspBalance)} + Roth {fmt(calc.rothCombinedNow)} today · {yearsToRetire.toFixed(1)} yrs · {tspGrowth.toFixed(1)}% growth
             </span>
           </div>
           <div className="pm-milestone-row">
@@ -2224,7 +2247,7 @@ function Topbar(){
           <span className="brand-name">Military Pension Studio</span>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.7.1</span>
+          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.7.2</span>
         </div>
       </div>
     </div>
