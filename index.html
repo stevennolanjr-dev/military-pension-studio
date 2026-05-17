@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<title>Military Pension Studio v3.6.1 · A retirement instrument for service members</title>
+<title>Military Pension Studio v3.7 · A retirement instrument for service members</title>
 <link rel="preconnect" href="https://rsms.me/" />
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -500,7 +500,7 @@ const FED_STD_DEDUCTION_2026 = {single:16100, mfj:32200};
 
 // US States: tax treatment + COL index + property tax + disabled vet exemption + sales tax
 // COL index baseline: US average = 100 (rebased from C2ER 2025)
-// US States with extended detail. New v3.6.1 fields:
+// US States with extended detail. New v3.7 fields:
 // healthIdx: US News & World Report 2024-25 state health ranking, approx 0-100 (higher better)
 // crimeIdx: FBI UCR 2024 derived approx 0-100 (lower better)
 // anchor: representative city for cost-of-living and climate
@@ -560,7 +560,7 @@ const STATES = {
   WY:{n:"Wyoming",      tax:"none", col:91, prop:0.58,vex:"part",salesTax:5.44,healthIdx:68,crimeIdx:33,anchor:"Cheyenne",vaCount:1,climate:"Semi-arid, very cold winters",type:"state"},
 };
 
-// Expat destinations with extended detail. v3.6.1 fields:
+// Expat destinations with extended detail. v3.7 fields:
 // healthIdx: Numbeo Healthcare Index 2026 (0-100, higher better)
 // crimeIdx: Numbeo Crime Index 2026 (0-100, lower better)
 // rentIdx / groceriesIdx: Numbeo sub-indices rebased to US avg = 100
@@ -734,7 +734,7 @@ function App(){
   const [retireMonth,setRetireMonth]=useState(2);
   const [retireAge,setRetireAge]=useState(44);
   const [diems,setDiems]=useState("");
-  const [birthYear,setBirthYear]=useState(1982);
+  const [birthDate,setBirthDate]=useState("1982-08-15"); // full date for accurate age
   const [gender,setGender]=useState("M");
   const [filingStatus,setFilingStatus]=useState("mfj");
 
@@ -780,10 +780,37 @@ function App(){
   const [tspMonthly,setTspMonthly]=useState(0); // monthly contribution AFTER retiring (most retirees stop)
   const [tspGrowth,setTspGrowth]=useState(7);
 
-  // Derived: current age and years until retirement (driven by birth year + retire age)
-  const currentYear=new Date().getFullYear();
-  const currentAge=useMemo(()=>Math.max(0,currentYear-birthYear),[currentYear,birthYear]);
+  // Roth IRA (self + spouse), projected with the same growth rate as TSP for simplicity.
+  // 2026 IRA contribution limit: $7,000/yr (under 50), $8,000/yr (50+). Income phase-out
+  // for direct contribution: MFJ ~$236-$246K, single ~$150-$165K (rough 2026 estimates).
+  const [rothSelfBalance,setRothSelfBalance]=useState(45000);
+  const [rothSpouseBalance,setRothSpouseBalance]=useState(35000);
+  const [rothMonthlyContrib,setRothMonthlyContrib]=useState(0); // combined monthly into both Roths
+
+  // Derived: current age computed from full birth date (accounts for whether birthday has passed)
+  // and years until retirement
+  const today=new Date();
+  const currentAge=useMemo(()=>{
+    if(!birthDate)return 0;
+    const b=new Date(birthDate);
+    if(isNaN(b.getTime()))return 0;
+    let age=today.getFullYear()-b.getFullYear();
+    const monthDiff=today.getMonth()-b.getMonth();
+    if(monthDiff<0 || (monthDiff===0 && today.getDate()<b.getDate()))age--;
+    return Math.max(0,age);
+  },[birthDate]);
   const yearsToRetire=useMemo(()=>Math.max(0,retireAge-currentAge),[retireAge,currentAge]);
+
+  // 2026 TSP contribution limits (Source: TSP Bulletin 25-3)
+  // Standard: $24,500/yr ($2,042/mo)
+  // Age 50-59 and 64+ catch-up: +$8,000 ($32,500 total)
+  // Age 60-63 SECURE 2.0 super catch-up: +$11,250 ($35,750 total)
+  const tspMaxAnnual=useMemo(()=>{
+    if(currentAge<50)return 24500;
+    if(currentAge>=60 && currentAge<=63)return 24500+11250;
+    return 24500+8000;
+  },[currentAge]);
+  const tspMaxMonthly=Math.round(tspMaxAnnual/12);
 
   // Civilian / transition
   const [civilianSalary,setCivilianSalary]=useState(120000);
@@ -944,6 +971,19 @@ function App(){
     const tspAt67=fvLumpSum(mPhase3,tspAtRetirement)+fvAnnuity(mPhase3,tspMonthly);
     const tspFV=tspAt67; // backwards-compat alias
 
+    // Roth IRA projection. Combined self + spouse balance. Same growth rate as TSP
+    // for simplicity. Contributions continue throughout all three phases (Roth has no
+    // age-based contribution cutoff like working-income-required earlier).
+    const rothCombinedNow=rothSelfBalance+rothSpouseBalance;
+    const rothAtRetirement=fvLumpSum(mPhase1,rothCombinedNow)+fvAnnuity(mPhase1,rothMonthlyContrib);
+    const rothAt59_5=fvLumpSum(mPhase2,rothAtRetirement)+fvAnnuity(mPhase2,rothMonthlyContrib);
+    const rothAt67=fvLumpSum(mPhase3,rothAtRetirement)+fvAnnuity(mPhase3,rothMonthlyContrib);
+
+    // Total retirement portfolio (TSP traditional + Roth tax-free) at each milestone
+    const portfolioAtRetirement=tspAtRetirement+rothAtRetirement;
+    const portfolioAt59_5=tspAt59_5+rothAt59_5;
+    const portfolioAt67=tspAt67+rothAt67;
+
     const civilianMonthly=civilianSalary/12;
     // Civilian salary is taxable. Net it by fed + (home state) effective rates.
     const civilianMonthlyNet=civilianMonthly*(1-effectiveFedRate-homeCalc.stateTaxRate);
@@ -977,13 +1017,17 @@ function App(){
       homeCalc,compareCalcs,bestLocation,
       trapRows,selectedRow,bestRow,worstRow,trapDelta,trapLifetime,
       lifetimePension,lifetimeVA,lifetimeTotal,lifetimeTotalWithSS,
-      tspFV,tspAtRetirement,tspAt59_5,tspAt67,civilianMonthly,terminalLeavePay,householdRunway,
+      tspFV,tspAtRetirement,tspAt59_5,tspAt67,
+      rothCombinedNow,rothAtRetirement,rothAt59_5,rothAt67,
+      portfolioAtRetirement,portfolioAt59_5,portfolioAt67,
+      civilianMonthly,terminalLeavePay,householdRunway,
       ssMonthly,ssYearsCollected,ssLifetime,yearsUntilSS,
       basMonthly,adMonthlyTakehome,adBaseTakehome,monthlyGapVsAD,targetCivilianAnnual,civilianGapStatus,
     };
-  },[system,years,highThree,retireMonth,retireAge,annualCOLA,filingStatus,gender,birthYear,rank,
+  },[system,years,highThree,retireMonth,retireAge,annualCOLA,filingStatus,gender,birthDate,rank,
      brsLump,discountRate,vaRating,hasSpouse,kids,combatRelated,
      sbpOn,sbpBasePct,homeLocation,compareLocations,tspBalance,tspMonthly,tspGrowth,yearsToRetire,tspMonthlyDuringService,
+     rothSelfBalance,rothSpouseBalance,rothMonthlyContrib,
      civilianSalary,terminalDays,skillBridgeMo,pensionLagDays,lostBAH,tricarePlan,fedTaxOverride,
      ssBenefitFRA,ssClaimAge]);
 
@@ -1319,7 +1363,7 @@ function App(){
                     <span className="field-value">{yearsToRetire} yrs</span>
                   </div>
                   <div className="field-help" style={{marginTop:4}}>
-                    Auto-computed from your birth year ({birthYear}, current age {currentAge}) and retirement age ({retireAge}). Edit either in the inputs drawer.
+                    Auto-computed from your birth date (current age {currentAge}) and retirement age ({retireAge}). Edit either in the inputs drawer.
                   </div>
                 </div>
                 <div className="field">
@@ -1327,7 +1371,13 @@ function App(){
                     <span>Monthly TSP while serving</span>
                     <span className="field-value num">{fmt(tspMonthlyDuringService)}</span>
                   </div>
-                  <input type="range" className="range-track" min={0} max={2500} step={50} value={tspMonthlyDuringService} onChange={e=>setTspMonthlyDuringService(Number(e.target.value))}/>
+                  <input type="range" className="range-track" min={0} max={3000} step={50} value={tspMonthlyDuringService} onChange={e=>setTspMonthlyDuringService(Number(e.target.value))}/>
+                  <div className="field-help" style={{marginTop:4,display:"flex",justifyContent:"space-between",gap:8}}>
+                    <span>2026 max for age {currentAge}: <b className="num" style={{color:"var(--ink)"}}>{fmt(tspMaxMonthly)}/mo</b> ({fmt(tspMaxAnnual)}/yr)</span>
+                    <span style={{color:tspMonthlyDuringService>=tspMaxMonthly?"var(--pos)":"var(--ink-3)"}}>
+                      {Math.round((tspMonthlyDuringService/tspMaxMonthly)*100)}% of max
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="field">
@@ -1367,14 +1417,91 @@ function App(){
             <p><strong>Common mistake:</strong> electing partial coverage to save on premiums. The math rarely favors it. If you elect, go full base. You can decrease coverage later (one-time, between months 25-36 of retirement), but you cannot increase it. Decision is otherwise locked at retirement.</p>
           </LearnBlock>
 
-          <LearnBlock title="TSP: when can you actually access the money?">
-            <p>The Thrift Savings Plan (TSP) is the federal 401(k)-equivalent retirement account. Low fees, five core funds (G, F, C, S, I) plus Lifecycle (L) target-date funds. 2026 contribution limit: $23,500 ($31,000 if 50+).</p>
-            <p><strong>The standard rule:</strong> withdrawals before age 59½ trigger a 10% early withdrawal penalty on top of ordinary income tax. The IRS treats your traditional TSP money as tax-deferred until you're 59½ in standard cases.</p>
+          <LearnBlock title="TSP contribution limits and when can you access the money">
+            <p>The Thrift Savings Plan (TSP) is the federal 401(k)-equivalent retirement account. Low fees, five core funds (G, F, C, S, I) plus Lifecycle (L) target-date funds.</p>
+            <p><strong>2026 contribution limits (per TSP Bulletin 25-3):</strong></p>
+            <p>• <strong>Under 50:</strong> $24,500/yr ($2,042/mo)<br/>• <strong>Age 50-59 and 64+:</strong> +$8,000 catch-up = $32,500/yr ($2,708/mo)<br/>• <strong>Age 60-63 SECURE 2.0 super catch-up:</strong> +$11,250 = $35,750/yr ($2,979/mo)</p>
+            <p><strong>SECURE 2.0 Mandatory Roth Catch-Up:</strong> If your prior-year FICA wages exceeded $150,000 AND you've maxed traditional contributions at $24,500, your catch-up dollars must go to Roth TSP (not traditional). Affects most senior officers.</p>
+            <p><strong>The standard withdrawal rule:</strong> taking money out before age 59½ triggers a 10% early withdrawal penalty on top of ordinary income tax. The IRS treats your traditional TSP money as tax-deferred until you're 59½ in standard cases.</p>
             <p><strong>Military exception — Rule of 55:</strong> If you separate from federal service (including military retirement) <em>during or after</em> the calendar year you turn 55, you can take penalty-free withdrawals from your TSP at any age after that separation. This is huge for late-career retirees. Most active-duty retirees retire before 55, so they don't qualify under this rule.</p>
             <p><strong>If you retire before 55:</strong> options to avoid the 10% penalty include Substantially Equal Periodic Payments (SEPP / 72(t)), TSP annuity election, qualified disability, or specific public safety provisions. Roth TSP contributions (not earnings) can be withdrawn anytime tax-free.</p>
             <p><strong>The "4% rule"</strong> is a rough safe-withdrawal heuristic: withdrawing 4% of your balance annually has historically lasted 30 years with high probability. For a $500K balance, that is $20K/year or $1,667/month.</p>
             <p><strong>For BRS members:</strong> the 5% match continues until separation. Maximize it. After separation, the match stops, but you can still contribute up to the annual limit if you have other earned income.</p>
           </LearnBlock>
+
+          {/* ===== Roth IRA ===== */}
+          <div className="surface" style={{marginTop:24}}>
+            <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:8,gap:16,flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500}}>Roth IRA · self + spouse</div>
+                <div className="display" style={{fontSize:20,marginTop:4}}>
+                  {fmt(calc.rothCombinedNow)} today → <span className="num text-accent">{fmt(calc.rothAt67)}</span> at age 67 <Conf level="low"/>
+                </div>
+                <div style={{fontSize:12,color:"var(--ink-3)",marginTop:4}}>
+                  Tax-free withdrawals after age 59½ on contributions and earnings. No required minimum distributions.
+                </div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:11,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.08em",fontWeight:500}}>Combined portfolio at 67</div>
+                <div className="num text-accent" style={{fontSize:24,fontWeight:500,marginTop:4}}>{fmt(calc.portfolioAt67)}</div>
+                <div style={{fontSize:11,color:"var(--ink-3)"}}>TSP + Roth</div>
+              </div>
+            </div>
+
+            <div className="grid-3" style={{gap:14,marginTop:14}}>
+              <div className="field">
+                <div className="field-label">
+                  <span>Your Roth balance</span>
+                  <span className="field-value num">{fmt(rothSelfBalance)}</span>
+                </div>
+                <input type="range" className="range-track" min={0} max={500000} step={1000} value={rothSelfBalance} onChange={e=>setRothSelfBalance(Number(e.target.value))}/>
+              </div>
+              <div className="field">
+                <div className="field-label">
+                  <span>Spouse Roth balance</span>
+                  <span className="field-value num">{fmt(rothSpouseBalance)}</span>
+                </div>
+                <input type="range" className="range-track" min={0} max={500000} step={1000} value={rothSpouseBalance} onChange={e=>setRothSpouseBalance(Number(e.target.value))}/>
+              </div>
+              <div className="field">
+                <div className="field-label">
+                  <span>Combined monthly contribution</span>
+                  <span className="field-value num">{fmt(rothMonthlyContrib)}</span>
+                </div>
+                <input type="range" className="range-track" min={0} max={1500} step={50} value={rothMonthlyContrib} onChange={e=>setRothMonthlyContrib(Number(e.target.value))}/>
+                <div className="field-help" style={{marginTop:4}}>
+                  2026 max per IRA: ${currentAge<50?"7,000":"8,000"}/yr (${currentAge<50?"583":"667"}/mo per spouse).
+                </div>
+              </div>
+            </div>
+
+            {/* Roth + TSP milestones combined */}
+            <div className="grid-3" style={{gap:8,marginTop:14}}>
+              <div className="surface-inset">
+                <div style={{fontSize:10.5,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>At retirement</div>
+                <div className="num text-accent" style={{fontSize:18,fontWeight:500,marginTop:4}}>{fmt(calc.portfolioAtRetirement)}</div>
+                <div style={{fontSize:11,color:"var(--ink-3)",marginTop:2}}>TSP {fmt(calc.tspAtRetirement)} + Roth {fmt(calc.rothAtRetirement)}</div>
+              </div>
+              <div className="surface-inset">
+                <div style={{fontSize:10.5,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>At age 59.5</div>
+                <div className="num text-accent" style={{fontSize:18,fontWeight:500,marginTop:4}}>{fmt(calc.portfolioAt59_5)}</div>
+                <div style={{fontSize:11,color:"var(--ink-3)",marginTop:2}}>4% rule: {fmt(calc.portfolioAt59_5*0.04/12)}/mo</div>
+              </div>
+              <div className="surface-inset">
+                <div style={{fontSize:10.5,color:"var(--ink-3)",textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>At age 67</div>
+                <div className="num text-accent" style={{fontSize:18,fontWeight:500,marginTop:4}}>{fmt(calc.portfolioAt67)}</div>
+                <div style={{fontSize:11,color:"var(--ink-3)",marginTop:2}}>4% rule: {fmt(calc.portfolioAt67*0.04/12)}/mo</div>
+              </div>
+            </div>
+
+            <LearnBlock title="Roth IRA: contribution limits, income phase-out, and the backdoor">
+              <p><strong>2026 contribution limits:</strong> $7,000/yr if under 50 ($583/mo), $8,000/yr if 50+ ($667/mo). Per person. A married couple maxing both IRAs contributes up to $14,000/yr ($16,000/yr if both 50+). Spousal IRA rules let a non-earning spouse contribute based on the earning spouse's income.</p>
+              <p><strong>Income phase-out (2026 estimates):</strong> Married filing jointly: full contribution under ~$236K modified AGI, phased out by ~$246K. Single: full contribution under ~$150K, phased out by ~$165K. Above these thresholds, direct Roth contributions are not allowed.</p>
+              <p><strong>The backdoor Roth:</strong> if you're over the income limit, you can contribute to a Traditional IRA (non-deductible because you have a workplace retirement plan) and immediately convert it to Roth. Pro rata rules apply if you have other pre-tax IRA balances. Common strategy for senior officers and dual-military couples above the income limit.</p>
+              <p><strong>Tax treatment:</strong> contributions are post-tax. Growth is tax-free. Qualified withdrawals (after 59½ AND 5 years from first contribution) are 100% tax-free. Contributions (not earnings) can be withdrawn anytime without penalty. No required minimum distributions during your lifetime.</p>
+              <p><strong>Roth vs Traditional decision:</strong> Roth wins if you expect higher tax rates in retirement (or want tax-free withdrawal flexibility, estate planning benefits, or hedge against future tax hikes). Traditional wins if you expect lower tax rates in retirement and want immediate tax deduction. Most military retirees end up in similar or higher brackets in retirement due to pension + VA + civilian salary, making Roth particularly valuable.</p>
+            </LearnBlock>
+          </div>
 
           {/* ===== Social Security ===== */}
           <div className="surface" style={{marginTop:24}}>
@@ -1606,11 +1733,14 @@ function App(){
           </details>
 
           <details style={{marginTop:12}}>
-            <summary>Birth year + life expectancy detail</summary>
+            <summary>Birth date + life expectancy detail</summary>
             <div className="details-body">
-              <NumField label="Birth year" value={birthYear} setter={setBirthYear} min={1940} max={2010}/>
+              <label className="field">
+                <span className="field-label"><span>Birth date</span></span>
+                <input type="date" className="ctrl" value={birthDate} aria-label="Birth date" onChange={e=>setBirthDate(e.target.value)}/>
+              </label>
               <div style={{fontSize:13,color:"var(--ink-2)",marginTop:8}}>
-                You retire at age {retireAge} (set in inputs drawer). Life expectancy at age {retireAge} for {gender==="M"?"males":"females"}: ~{calc.totalLifespan} years. Years in retirement: <b className="num">{calc.yearsRetired}</b>.
+                Current age: <b>{currentAge}</b>. You retire at age {retireAge} (set in inputs drawer). Life expectancy at age {retireAge} for {gender==="M"?"males":"females"}: ~{calc.totalLifespan} years. Years in retirement: <b className="num">{calc.yearsRetired}</b>.
               </div>
               <LearnBlock title="About the life expectancy model">
                 <p>Estimates use simplified period life tables from the US Social Security Administration (2024 data). Average life expectancy at age 45 is approximately 80 years for males and 84 for females. These are population averages; military retirees tend to live slightly longer due to selection effects (you survived 20+ years of service).</p>
@@ -1680,7 +1810,7 @@ function App(){
         </section>
 
         <footer className="footer">
-          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.6.1 · A planning instrument for service members.</div>
+          <div style={{marginBottom:8,color:"var(--ink-2)"}}>Military Pension Studio v3.7 · A planning instrument for service members.</div>
           Official retirement pay is determined by Defense Finance and Accounting Service (DFAS) based on your actual record. VA rates reflect 2026 (2.8% Cost of Living Adjustment, effective Dec 1 2025). Federal tax brackets per IRS Rev. Proc. 2025-32. State cost of living indices rebased from C2ER 2025. Expat cost of living, healthcare, and crime indices from Numbeo 2026 (crowdsourced). US state healthcare quality from US News &amp; World Report 2024-25 rankings. US state crime indices derived from FBI UCR 2024. English proficiency from EF EPI 2024. Property tax effective rates from Tax Foundation 2025. Tax treaty status is general; consult a tax professional for your specific situation. CRDP/CRSC, REDUX age-62 catch-up, and BRS lump sum are simplified models. Built in conversation with Claude. Verify with your retirement services office and a tax professional before locking in a date.
         </footer>
       </div>
@@ -1732,7 +1862,13 @@ function App(){
           <div className="drawer-section">
             <h4>Tax & life</h4>
             <SegField label="Filing status" value={filingStatus} setter={setFilingStatus} options={[["single","Single"],["mfj","Married Filing Jointly"]]}/>
-            <NumField label="Birth year" value={birthYear} setter={setBirthYear} min={1940} max={2010}/>
+            <label className="field">
+              <span className="field-label">
+                <span>Birth date</span>
+                <span className="field-value">age {currentAge}</span>
+              </span>
+              <input type="date" className="ctrl" value={birthDate} aria-label="Birth date" onChange={e=>setBirthDate(e.target.value)}/>
+            </label>
             <SegField label="Gender (life expectancy)" value={gender} setter={setGender} options={[["M","Male"],["F","Female"]]}/>
           </div>
 
@@ -1801,7 +1937,7 @@ function PrintMemo(props){
           Military Pension Studio
         </div>
         <div className="pm-title">Retirement Decision Memo</div>
-        <div className="pm-meta">Generated {dateStr} · v3.6.1</div>
+        <div className="pm-meta">Generated {dateStr} · v3.7</div>
       </div>
 
       <div className="pm-identity">
@@ -1978,32 +2114,32 @@ function PrintMemo(props){
       <div className="pm-body-row2">
         <div className="pm-panel">
           <div className="pm-panel-title">
-            TSP milestones
+            Retirement portfolio · TSP + Roth IRA
             <span style={{float:"right",fontSize:8,color:"#666",fontWeight:500,letterSpacing:0,textTransform:"none"}}>
-              {fmt(tspBalance)} today · {yearsToRetire} yr to retire · {tspGrowth.toFixed(1)}% growth · ${tspMonthlyDuringService}/mo contrib
+              TSP {fmt(tspBalance)} + Roth {fmt(calc.rothCombinedNow)} today · {yearsToRetire} yr · {tspGrowth.toFixed(1)}% growth
             </span>
           </div>
           <div className="pm-milestone-row">
             <div className="pm-milestone">
               <div className="pm-milestone-label">At retirement</div>
-              <div className="pm-milestone-val">{fmt(calc.tspAtRetirement)}</div>
-              <div className="pm-milestone-sub">in {yearsToRetire} yrs · age {retireAge}</div>
+              <div className="pm-milestone-val">{fmt(calc.portfolioAtRetirement)}</div>
+              <div className="pm-milestone-sub">TSP {fmt(calc.tspAtRetirement)} + Roth {fmt(calc.rothAtRetirement)}</div>
             </div>
             <div className="pm-milestone-arrow">→</div>
             <div className="pm-milestone">
               <div className="pm-milestone-label">At age 59.5</div>
-              <div className="pm-milestone-val">{fmt(calc.tspAt59_5)}</div>
-              <div className="pm-milestone-sub">penalty-free access</div>
+              <div className="pm-milestone-val">{fmt(calc.portfolioAt59_5)}</div>
+              <div className="pm-milestone-sub">penalty-free TSP · {fmt(calc.portfolioAt59_5*0.04/12)}/mo at 4%</div>
             </div>
             <div className="pm-milestone-arrow">→</div>
             <div className="pm-milestone">
               <div className="pm-milestone-label accent">At age 67 · Full retirement</div>
-              <div className="pm-milestone-val accent">{fmt(calc.tspAt67)}</div>
-              <div className="pm-milestone-sub">{fmt(calc.tspAt67*0.04/12)}/mo at 4% rule</div>
+              <div className="pm-milestone-val accent">{fmt(calc.portfolioAt67)}</div>
+              <div className="pm-milestone-sub">{fmt(calc.portfolioAt67*0.04/12)}/mo at 4% rule</div>
             </div>
           </div>
           <div className="pm-callout" style={{marginTop:6,fontSize:8.5}}>
-            <b>Early access:</b> Pre-59½ withdrawals normally cost a 10% penalty plus tax. Exceptions: Rule of 55 (separate at/after age 55), 72(t) substantially equal periodic payments, or TSP annuity. Roth contributions are always penalty-free.
+            <b>Access rules:</b> TSP penalty-free at 59½ (or Rule of 55 if separated at 55+). Roth IRA contributions withdrawable anytime; earnings tax-free after 59½ + 5 years. 2026 TSP max ${tspMaxMonthly}/mo for age {currentAge}.
           </div>
         </div>
 
@@ -2086,7 +2222,7 @@ function Topbar(){
           <span className="brand-name">Military Pension Studio</span>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.6.1</span>
+          <span style={{fontSize:11,color:"var(--ink-3)"}}>2026 RATES · v3.7</span>
         </div>
       </div>
     </div>
